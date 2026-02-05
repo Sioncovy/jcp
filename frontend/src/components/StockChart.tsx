@@ -86,7 +86,7 @@ export const StockChart: React.FC<StockChartProps> = ({ data, period, onPeriodCh
                 onClick={() => onPeriodChange(p.id)}
                 className={`text-xs px-3 py-1 rounded transition-colors ${
                   period === p.id 
-                    ? 'bg-slate-800/80 text-cyan-300 font-bold' 
+                    ? 'bg-slate-800/80 text-accent-2 font-bold' 
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                 }`}
               >
@@ -97,14 +97,14 @@ export const StockChart: React.FC<StockChartProps> = ({ data, period, onPeriodCh
          <div className="text-xs text-slate-400 font-mono flex gap-4">
            {isIntraday ? (
              <>
-               <span>现价: <span className="text-cyan-300">{(stock?.price || lastClose).toFixed(2)}</span></span>
+               <span>现价: <span className="text-accent-2">{(stock?.price || lastClose).toFixed(2)}</span></span>
                <span>均价: <span className="text-yellow-400">{data[data.length - 1].avg?.toFixed(2) || '--'}</span></span>
                <span>最高: <span className="text-red-400">{(stock?.high || Math.max(...data.map(d => d.high))).toFixed(2)}</span></span>
                <span>最低: <span className="text-green-400">{(stock?.low || Math.min(...data.map(d => d.low))).toFixed(2)}</span></span>
              </>
            ) : (
              <>
-               <span>收: <span className="text-cyan-300">{lastClose.toFixed(2)}</span></span>
+               <span>收: <span className="text-accent-2">{lastClose.toFixed(2)}</span></span>
                <span>开: {data[data.length - 1].open.toFixed(2)}</span>
                <span>高: <span className="text-red-400">{data[data.length - 1].high.toFixed(2)}</span></span>
                <span>低: <span className="text-green-400">{data[data.length - 1].low.toFixed(2)}</span></span>

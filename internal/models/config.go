@@ -48,7 +48,7 @@ type MCPServerConfig struct {
 // AppConfig 应用配置
 type AppConfig struct {
 	RefreshInterval int64             `json:"refreshInterval"`
-	DarkTheme       bool              `json:"darkTheme"`
+	Theme           string            `json:"theme"` // 主题色: military, ocean, purple, orange, dark
 	AIConfigs       []AIConfig        `json:"aiConfigs"`
 	DefaultAIID     string            `json:"defaultAiId"`
 	MCPServers      []MCPServerConfig `json:"mcpServers"` // MCP服务器配置列表

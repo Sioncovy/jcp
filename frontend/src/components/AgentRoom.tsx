@@ -97,7 +97,12 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
 
   // 加载Agent配置
   useEffect(() => {
-    getAgentConfigs().then(setAllAgents);
+    getAgentConfigs()
+      .then(agents => setAllAgents(agents || []))
+      .catch(err => {
+        console.error('[AgentRoom] 加载Agent配置失败:', err);
+        setAllAgents([]);
+      });
   }, []);
 
   // 当Session变化时，从后端加载最新消息
@@ -362,12 +367,12 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
   };
 
   return (
-    <div className="flex flex-col h-full fin-panel border-l fin-divider w-96 shadow-xl shrink-0">
+    <div className="relative flex flex-col h-full fin-panel border-l fin-divider w-96 shadow-xl shrink-0">
       {/* Header */}
       <div className="p-4 border-b fin-divider fin-panel-strong">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Users className="text-cyan-400" />
+            <Users style={{ color: 'var(--accent)' }} />
             韭菜讨论中心
           </h2>
           <button
@@ -420,7 +425,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                <div key={msg.id} className="flex gap-3 justify-end animate-in fade-in slide-in-from-bottom-2 duration-300">
                  <div className="flex-1 text-right max-w-[85%]">
                     <div className="flex items-baseline gap-2 mb-1 justify-end">
-                      <span className="text-xs font-bold text-cyan-400">{displayName}</span>
+                      <span className="text-xs font-bold text-accent-2">{displayName}</span>
                       {mentionNames.length > 0 && (
                         <span className="text-[10px] text-slate-400">
                           @{mentionNames.join(', ')}
@@ -434,7 +439,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                         <span className="line-clamp-1">{quotedMsg.content}</span>
                       </div>
                     )}
-                    <div className="inline-block text-left text-sm text-white bg-gradient-to-br from-sky-500 to-cyan-500 p-3 rounded-2xl rounded-tr-none shadow-sm">
+                    <div className="inline-block text-left text-sm text-white bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] p-3 rounded-2xl rounded-tr-none shadow-sm">
                       {msg.content}
                     </div>
                     {/* 失败时显示重试/编辑按钮 */}
@@ -457,7 +462,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                       </div>
                     )}
                  </div>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-slate-900/60 text-cyan-300 border border-cyan-500/30">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-slate-900/60 text-accent-2 border border-accent/30">
                     <User size={16}/>
                   </div>
                </div>
@@ -549,8 +554,8 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
             {progress.currentAgent ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin h-4 w-4 text-cyan-400" />
-                  <span className="text-sm text-cyan-400 font-medium">{progress.currentAgentName}</span>
+                  <Loader2 className="animate-spin h-4 w-4 text-accent-2" />
+                  <span className="text-sm text-accent-2 font-medium">{progress.currentAgentName}</span>
                   <span className="text-xs text-slate-500">正在分析...</span>
                 </div>
                 {progress.steps.length > 0 && (
@@ -572,7 +577,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
               </div>
             ) : (
               <div className="flex items-center gap-2 justify-center">
-                <Loader2 className="animate-spin h-3 w-3 text-cyan-400" />
+                <Loader2 className="animate-spin h-3 w-3 text-accent-2" />
                 <span className="text-xs text-slate-500 animate-pulse">会议进行中...</span>
               </div>
             )}
@@ -584,10 +589,10 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
       <div className="p-3 border-t fin-divider fin-panel-strong shrink-0">
         {/* 引用预览 */}
         {replyToMessage && (
-          <div className="flex items-center gap-2 mb-2 p-2 bg-slate-800/50 rounded-lg border-l-2 border-cyan-500">
-            <Reply size={12} className="text-cyan-400 shrink-0" />
+          <div className="flex items-center gap-2 mb-2 p-2 bg-slate-800/50 rounded-lg border-l-2 border-accent">
+            <Reply size={12} className="text-accent-2 shrink-0" />
             <div className="flex-1 min-w-0">
-              <span className="text-[10px] text-cyan-400">引用 {replyToMessage.agentName}</span>
+              <span className="text-[10px] text-accent-2">引用 {replyToMessage.agentName}</span>
               <p className="text-xs text-slate-400 truncate">{replyToMessage.content}</p>
             </div>
             <button onClick={clearReplyTo} className="text-slate-500 hover:text-slate-300 p-1">
@@ -605,7 +610,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
               return agent ? (
                 <span
                   key={id}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-[10px]"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-accent/20 text-accent-2 rounded text-[10px]"
                 >
                   @{agent.name}
                   <button onClick={() => toggleMention(id)} className="hover:text-white">
@@ -639,7 +644,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                     onClick={() => onSelectMention(agent)}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
                       index === mentionSelectedIndex
-                        ? 'bg-cyan-500/20 text-white'
+                        ? 'bg-accent/20 text-white'
                         : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
@@ -651,7 +656,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                       <div className="text-[10px] text-slate-500 truncate">{agent.role}</div>
                     </div>
                     {index === mentionSelectedIndex && (
-                      <span className="text-cyan-400 text-xs">⏎</span>
+                      <span className="text-accent-2 text-xs">⏎</span>
                     )}
                   </button>
                 ))}
@@ -667,14 +672,15 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                value={userQuery}
                onChange={handleInputChange}
                onKeyDown={handleKeyDown}
-               disabled={isSimulating || allAgents.length === 0}
+               disabled={isSimulating}
                placeholder="直接提问或输入 @ 选择韭菜专家..."
                className="flex-1 fin-input rounded-lg px-4 py-2 text-sm placeholder-slate-500 border fin-divider"
             />
             <button
                type="submit"
                disabled={isSimulating || !userQuery.trim()}
-               className="bg-gradient-to-br from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 disabled:bg-slate-700 disabled:text-slate-500 text-white p-2 rounded-lg transition-colors flex items-center justify-center w-10 h-10"
+               className="text-white p-2 rounded-lg transition-colors flex items-center justify-center w-10 h-10 disabled:opacity-50"
+               style={{ background: (isSimulating || !userQuery.trim()) ? '#334155' : `linear-gradient(to bottom right, var(--accent), var(--accent-2))` }}
             >
               {isSimulating ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
             </button>
@@ -722,7 +728,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
               ? 'bg-red-900/90 border-red-500/50 text-red-100'
               : toast.type === 'warning'
               ? 'bg-amber-900/90 border-amber-500/50 text-amber-100'
-              : 'bg-cyan-900/90 border-cyan-500/50 text-cyan-100'
+              : 'bg-[var(--accent)]/90 border-accent/50 text-white'
           }`}>
             <AlertCircle size={18} />
             <span className="text-sm">{toast.message}</span>

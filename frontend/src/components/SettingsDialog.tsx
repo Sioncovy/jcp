@@ -162,7 +162,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 onClick={() => setActiveTab(tab.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-1 transition-all ${
                   activeTab === tab.id
-                    ? 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white'
+                    ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
                     : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
                 }`}
               >
@@ -277,7 +277,7 @@ const CloseConfirmDialog: React.FC<CloseConfirmDialogProps> = ({ onSave, onDisca
         </button>
         <button
           onClick={onSave}
-          className="px-4 py-1.5 bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-lg text-sm"
+          className="px-4 py-1.5 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm"
         >
           保存
         </button>
@@ -338,7 +338,7 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ configs, selectedPr
             onClick={() => onSelectProvider(p)}
             className={`flex-1 px-3 py-2 text-sm rounded-md transition-all ${
               selectedProvider === p
-                ? 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white'
+                ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
                 : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
             }`}
           >
@@ -412,7 +412,7 @@ const Footer: React.FC<FooterProps> = ({ saving, onSave, onClose }) => (
     <button
       onClick={onSave}
       disabled={saving}
-      className="px-5 py-2 bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-lg hover:from-sky-400 hover:to-cyan-400 text-sm disabled:opacity-50 transition-colors"
+      className="px-5 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg  text-sm disabled:opacity-50 transition-colors"
     >
       {saving ? '保存中...' : '保存'}
     </button>
@@ -490,7 +490,7 @@ const AgentListItem: React.FC<{ agent: AgentConfig; onClick: () => void }> = ({ 
       </div>
       <p className="text-slate-500 text-xs truncate">{agent.role}</p>
     </div>
-    <div className={`w-2 h-2 rounded-full ${agent.enabled ? 'bg-green-500' : 'bg-slate-600'}`} />
+    <div className={`w-2 h-2 rounded-full ${agent.enabled ? 'bg-accent' : 'bg-slate-600'}`} />
   </div>
 );
 
@@ -587,7 +587,7 @@ const AgentEditForm: React.FC<AgentEditFormProps> = ({
         <button
           onClick={() => handleChange('enabled', !editedAgent.enabled)}
           className={`w-11 h-6 rounded-full transition-colors ${
-            editedAgent.enabled ? 'bg-gradient-to-r from-sky-500 to-cyan-500' : 'bg-slate-600'
+            editedAgent.enabled ? 'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)]' : 'bg-slate-600'
           }`}
         >
           <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -602,7 +602,7 @@ const AgentEditForm: React.FC<AgentEditFormProps> = ({
           onClick={() => setActiveTab('basic')}
           className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md transition-all ${
             activeTab === 'basic'
-              ? 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white'
+              ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
           }`}
         >
@@ -613,7 +613,7 @@ const AgentEditForm: React.FC<AgentEditFormProps> = ({
           onClick={() => setActiveTab('tools')}
           className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md transition-all ${
             activeTab === 'tools'
-              ? 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white'
+              ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
           }`}
         >
@@ -673,7 +673,7 @@ const AgentEditForm: React.FC<AgentEditFormProps> = ({
               {availableTools.length > 0 && (
                 <button
                   onClick={toggleAllTools}
-                  className="text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                  className="text-xs text-accent-2 hover:text-accent-2 transition-colors"
                 >
                   {availableTools.every(t => (editedAgent.tools || []).includes(t.name)) ? '取消全选' : '全选'}
                 </button>
@@ -691,12 +691,12 @@ const AgentEditForm: React.FC<AgentEditFormProps> = ({
                       onClick={() => toggleTool(tool.name)}
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-sky-500/50 bg-sky-500/10'
+                          ? 'border-accent/50 bg-accent/10'
                           : 'border-slate-700 hover:border-slate-600 hover:bg-slate-800/40'
                       }`}
                     >
                       <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-sky-500 text-white' : 'bg-slate-700 border border-slate-600'
+                        isSelected ? 'bg-accent text-white' : 'bg-slate-700 border border-slate-600'
                       }`}>
                         {isSelected && <Check className="h-3 w-3" />}
                       </div>
@@ -722,7 +722,7 @@ const AgentEditForm: React.FC<AgentEditFormProps> = ({
               {enabledMCPServers.length > 0 && (
                 <button
                   onClick={toggleAllMCPServers}
-                  className="text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                  className="text-xs text-accent-2 hover:text-accent-2 transition-colors"
                 >
                   {enabledMCPServers.every(s => (editedAgent.mcpServers || []).includes(s.id)) ? '取消全选' : '全选'}
                 </button>
@@ -837,7 +837,7 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
             onChange={(e) => onChange({ ...config, enabled: e.target.checked })}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
         </label>
       </div>
 
@@ -877,7 +877,7 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               max="10"
               value={config.maxRecentRounds}
               onChange={(e) => onChange({ ...config, maxRecentRounds: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
             />
             <div className="flex justify-between text-xs text-slate-500 mt-1">
               <span>1轮</span>
@@ -896,7 +896,7 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               max="15"
               value={config.compressThreshold}
               onChange={(e) => onChange({ ...config, compressThreshold: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
             />
             <p className="text-xs text-slate-500 mt-1">
               超过此轮次后，旧讨论将被压缩为摘要
@@ -915,7 +915,7 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               step="5"
               value={config.maxKeyFacts}
               onChange={(e) => onChange({ ...config, maxKeyFacts: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
             />
           </div>
 
@@ -931,7 +931,7 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               step="50"
               value={config.maxSummaryLength}
               onChange={(e) => onChange({ ...config, maxSummaryLength: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
             />
           </div>
         </div>
@@ -995,7 +995,7 @@ const MCPSettings: React.FC<MCPSettingsProps> = ({
         <h3 className="text-sm font-medium text-white">MCP 服务器</h3>
         <button
           onClick={handleAddNew}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-br from-sky-500 to-cyan-500 text-white rounded-lg hover:from-sky-400 hover:to-cyan-400"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg "
         >
           <Plus className="h-3.5 w-3.5" />
           添加
@@ -1029,7 +1029,7 @@ const MCPListItem: React.FC<{
   const getStatusColor = () => {
     if (!server.enabled) return 'bg-slate-600';
     if (!status) return 'bg-yellow-500 animate-pulse'; // 检测中
-    return status.connected ? 'bg-green-500' : 'bg-red-500';
+    return status.connected ? 'bg-accent' : 'bg-red-500';
   };
 
   const getStatusText = () => {
@@ -1153,7 +1153,7 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
         <button
           onClick={() => handleChange('enabled', !edited.enabled)}
           className={`w-11 h-6 rounded-full transition-colors ${
-            edited.enabled ? 'bg-gradient-to-r from-sky-500 to-cyan-500' : 'bg-slate-600'
+            edited.enabled ? 'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)]' : 'bg-slate-600'
           }`}
         >
           <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -1170,7 +1170,7 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
             {status && (
               <span className={`text-xs px-2 py-0.5 rounded ${
                 status.connected
-                  ? 'bg-green-500/20 text-green-400'
+                  ? 'bg-accent/20 text-accent-2'
                   : 'bg-red-500/20 text-red-400'
               }`}>
                 {status.connected ? '已连接' : status.error || '连接失败'}

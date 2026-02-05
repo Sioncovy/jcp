@@ -43,11 +43,11 @@ var (
 
 // Service 会议室服务，编排多专家并行分析
 type Service struct {
-	modelFactory    *adk.ModelFactory
-	toolRegistry    *tools.Registry
-	mcpManager      *mcp.Manager
-	memoryManager   *memory.Manager
-	memoryAIConfig  *models.AIConfig // 记忆管理使用的 LLM 配置
+	modelFactory   *adk.ModelFactory
+	toolRegistry   *tools.Registry
+	mcpManager     *mcp.Manager
+	memoryManager  *memory.Manager
+	memoryAIConfig *models.AIConfig // 记忆管理使用的 LLM 配置
 }
 
 // NewServiceFull 创建完整配置的会议室服务
@@ -376,11 +376,12 @@ func (s *Service) RunSmartMeetingWithCallback(ctx context.Context, aiConfig *mod
 
 	// 保存记忆（如果启用了记忆管理）
 	if s.memoryManager != nil && stockMemory != nil && summary != "" {
-		// 提取关键点（使用新的 context，因为会议 ctx 可能已取消）
-		keyPoints := s.extractKeyPointsFromHistory(context.Background(), history)
 		// 异步保存记忆，不阻塞返回
 		go func() {
-			if err := s.memoryManager.AddRound(context.Background(), stockMemory, req.Query, summary, keyPoints); err != nil {
+			// 使用独立 context，因为会议 ctx 可能已取消
+			bgCtx := context.Background()
+			keyPoints := s.extractKeyPointsFromHistory(bgCtx, history)
+			if err := s.memoryManager.AddRound(bgCtx, stockMemory, req.Query, summary, keyPoints); err != nil {
 				log.Error("save memory error: %v", err)
 			} else {
 				log.Debug("saved memory for %s", req.Stock.Symbol)

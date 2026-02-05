@@ -67,7 +67,7 @@ func (cs *ConfigService) loadConfig() error {
 func (cs *ConfigService) defaultConfig() *models.AppConfig {
 	return &models.AppConfig{
 		RefreshInterval: 5000,
-		DarkTheme:       true,
+		Theme:           "military",
 		AIConfigs:       []models.AIConfig{},
 		DefaultAIID:     "",
 		Memory: models.MemoryConfig{

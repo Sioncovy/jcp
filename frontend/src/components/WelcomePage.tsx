@@ -87,12 +87,12 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onAddStock }) => {
 
       {/* Logo 和标题 */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="bg-gradient-to-br from-sky-500 to-cyan-500 p-3 rounded-xl shadow-lg shadow-cyan-500/30">
+        <div className="bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] p-3 rounded-xl shadow-lg shadow-[var(--accent)]">
           <Activity className="text-white h-8 w-8" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-white">
-            韭菜盘 <span className="text-cyan-400">AI</span>
+            韭菜盘 <span className="text-accent-2">AI</span>
           </h1>
           <p className="text-slate-400 text-sm">智能股票分析助手</p>
         </div>
@@ -108,11 +108,11 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onAddStock }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
             placeholder="搜索股票代码或名称，添加自选股..."
-            className="w-full bg-slate-800/80 border border-slate-600 rounded-xl pl-12 pr-4 py-3 text-base text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
+            className="w-full bg-slate-800/80 border border-slate-600 rounded-xl pl-12 pr-4 py-3 text-base text-white placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
             autoFocus
           />
           {isSearching && (
-            <div className="absolute right-4 top-3.5 h-5 w-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute right-4 top-3.5 h-5 w-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           )}
         </div>
 
@@ -128,7 +128,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onAddStock }) => {
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="text-white font-medium">{result.name}</span>
-                    <span className="ml-2 font-mono text-cyan-400 text-sm">{result.symbol}</span>
+                    <span className="ml-2 font-mono text-accent-2 text-sm">{result.symbol}</span>
                   </div>
                   <span className="text-xs text-slate-500">{result.market}</span>
                 </div>

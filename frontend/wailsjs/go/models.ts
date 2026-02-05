@@ -268,7 +268,7 @@ export namespace models {
 	}
 	export class AppConfig {
 	    refreshInterval: number;
-	    darkTheme: boolean;
+	    theme: string;
 	    aiConfigs: AIConfig[];
 	    defaultAiId: string;
 	    mcpServers: MCPServerConfig[];
@@ -281,7 +281,7 @@ export namespace models {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.refreshInterval = source["refreshInterval"];
-	        this.darkTheme = source["darkTheme"];
+	        this.theme = source["theme"];
 	        this.aiConfigs = this.convertValues(source["aiConfigs"], AIConfig);
 	        this.defaultAiId = source["defaultAiId"];
 	        this.mcpServers = this.convertValues(source["mcpServers"], MCPServerConfig);

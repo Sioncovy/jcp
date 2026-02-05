@@ -6,17 +6,17 @@
 
 @layer base {
     :root {
-        --bg-0: #0b1220;
-        --bg-1: #0f172a;
-        --panel: rgba(15, 23, 42, 0.72);
-        --panel-strong: rgba(15, 23, 42, 0.92);
-        --panel-soft: rgba(15, 23, 42, 0.56);
-        --stroke: rgba(148, 163, 184, 0.14);
-        --stroke-strong: rgba(148, 163, 184, 0.22);
-        --text-0: #e2e8f0;
-        --text-1: #94a3b8;
-        --accent: #38bdf8;
-        --accent-2: #22d3ee;
+        --bg-0: #0a120b;
+        --bg-1: #121f14;
+        --panel: rgba(18, 31, 20, 0.72);
+        --panel-strong: rgba(18, 31, 20, 0.92);
+        --panel-soft: rgba(18, 31, 20, 0.56);
+        --stroke: rgba(107, 142, 35, 0.18);
+        --stroke-strong: rgba(107, 142, 35, 0.28);
+        --text-0: #e2e8e0;
+        --text-1: #9ca88b;
+        --accent: #6b8e23;
+        --accent-2: #8fbc3b;
     }
 
     html {
@@ -32,10 +32,6 @@
             "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
             sans-serif;
         background-color: var(--bg-0);
-        background-image:
-            radial-gradient(900px circle at 10% -20%, rgba(56, 189, 248, 0.16), transparent 55%),
-            radial-gradient(800px circle at 110% 0%, rgba(34, 211, 238, 0.12), transparent 45%),
-            linear-gradient(180deg, rgba(11, 18, 32, 0.95), rgba(7, 10, 16, 0.98));
         background-attachment: fixed;
     }
 
@@ -53,25 +49,25 @@
     .fin-app {
         background-color: var(--bg-0);
         background-image:
-            radial-gradient(1200px circle at 12% -10%, rgba(56, 189, 248, 0.12), transparent 58%),
-            radial-gradient(900px circle at 105% 5%, rgba(34, 211, 238, 0.12), transparent 48%),
-            linear-gradient(180deg, rgba(10, 15, 26, 0.6), rgba(7, 10, 16, 0.95)),
-            linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+            radial-gradient(1200px circle at 12% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 58%),
+            radial-gradient(900px circle at 105% 5%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 48%),
+            linear-gradient(180deg, var(--bg-0), var(--bg-1)),
+            linear-gradient(color-mix(in srgb, var(--accent) 6%, transparent) 1px, transparent 1px),
+            linear-gradient(90deg, color-mix(in srgb, var(--accent) 4%, transparent) 1px, transparent 1px);
         background-size: auto, auto, auto, 24px 24px, 24px 24px;
         background-position: center;
     }
 
     .fin-panel {
         background: var(--panel);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(148, 163, 184, 0.06);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 color-mix(in srgb, var(--accent) 6%, transparent);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
     }
 
     .fin-panel-strong {
         background: var(--panel-strong);
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(148, 163, 184, 0.08);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 color-mix(in srgb, var(--accent) 8%, transparent);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
     }
@@ -87,10 +83,10 @@
     }
 
     .fin-input {
-        background: rgba(12, 18, 30, 0.85);
+        background: var(--bg-1);
         border: 1px solid var(--stroke);
         color: var(--text-0);
-        box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.05);
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 5%, transparent);
     }
 
     .fin-input::placeholder {
@@ -99,23 +95,23 @@
 
     .fin-input:focus {
         outline: none;
-        border-color: rgba(56, 189, 248, 0.6);
-        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
     }
 
     .fin-chip {
-        background: rgba(15, 23, 42, 0.65);
+        background: var(--panel-soft);
         border: 1px solid var(--stroke);
     }
 
     .fin-glow {
-        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.18), 0 16px 36px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 16px 36px rgba(0, 0, 0, 0.45);
     }
 
     /* 自定义滚动条样式 */
     .fin-scrollbar {
         scrollbar-width: thin;
-        scrollbar-color: rgba(56, 189, 248, 0.3) transparent;
+        scrollbar-color: color-mix(in srgb, var(--accent) 30%, transparent) transparent;
     }
 
     .fin-scrollbar::-webkit-scrollbar {
@@ -124,18 +120,18 @@
     }
 
     .fin-scrollbar::-webkit-scrollbar-track {
-        background: rgba(15, 23, 42, 0.4);
+        background: var(--panel-soft);
         border-radius: 3px;
     }
 
     .fin-scrollbar::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, rgba(56, 189, 248, 0.4), rgba(34, 211, 238, 0.3));
+        background: color-mix(in srgb, var(--accent) 40%, transparent);
         border-radius: 3px;
         transition: background 0.2s;
     }
 
     .fin-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, rgba(56, 189, 248, 0.6), rgba(34, 211, 238, 0.5));
+        background: color-mix(in srgb, var(--accent) 60%, transparent);
     }
 
     /* Agent 消息气泡 Markdown 样式 */
@@ -173,7 +169,7 @@
     }
 
     .agent-message-content code {
-        background: rgba(56, 189, 248, 0.15);
+        background: color-mix(in srgb, var(--accent) 15%, transparent);
         color: var(--accent);
         padding: 0.15em 0.4em;
         border-radius: 4px;
@@ -246,7 +242,31 @@
     }
 
     .agent-message-content th {
-        background: rgba(56, 189, 248, 0.1);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
         font-weight: 600;
     }
+
+    /* 主题色工具类 */
+    .text-accent { color: var(--accent); }
+    .text-accent-2 { color: var(--accent-2); }
+    .bg-accent { background-color: var(--accent); }
+    .bg-accent-2 { background-color: var(--accent-2); }
+    .border-accent { border-color: var(--accent); }
+    .border-accent-2 { border-color: var(--accent-2); }
+
+    .bg-accent-gradient {
+        background: linear-gradient(to bottom right, var(--accent), var(--accent-2));
+    }
+
+    .hover\:text-accent:hover { color: var(--accent); }
+    .hover\:text-accent-2:hover { color: var(--accent-2); }
+    .hover\:bg-accent:hover { background-color: var(--accent); }
+    .hover\:border-accent:hover { border-color: var(--accent); }
+    .hover\:border-accent\/40:hover { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+    .text-accent\/50 { color: color-mix(in srgb, var(--accent) 50%, transparent); }
+    .bg-accent\/10 { background-color: color-mix(in srgb, var(--accent) 10%, transparent); }
+    .bg-accent\/20 { background-color: color-mix(in srgb, var(--accent) 20%, transparent); }
+    .border-accent\/30 { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+    .border-accent\/50 { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
 }

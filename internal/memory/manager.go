@@ -17,18 +17,24 @@ type Manager struct {
 	relevance  *Relevance
 	summarizer Summarizer
 	dataDir    string
+	saveCh     chan *StockMemory // 异步保存通道
+	closeCh    chan struct{}     // 关闭信号
 }
 
 // NewManager 创建记忆管理器（无 LLM，摘要功能禁用）
 func NewManager(dataDir string) *Manager {
 	tokenizer := NewJiebaTokenizer()
-	return &Manager{
+	m := &Manager{
 		config:    DefaultConfig(),
 		storage:   NewFileStorage(dataDir),
 		tokenizer: tokenizer,
 		relevance: NewRelevance(tokenizer),
 		dataDir:   dataDir,
+		saveCh:    make(chan *StockMemory, 100), // 缓冲通道
+		closeCh:   make(chan struct{}),
 	}
+	go m.asyncSaveLoop()
+	return m
 }
 
 // SetLLM 设置 LLM（启用摘要功能）
@@ -53,10 +59,43 @@ func (m *Manager) GetOrCreate(stockCode, stockName string) (*StockMemory, error)
 	return mem, nil
 }
 
-// Save 保存记忆
+// Save 保存记忆（同步）
 func (m *Manager) Save(mem *StockMemory) error {
 	mem.UpdatedAt = time.Now().UnixMilli()
 	return m.storage.Save(mem)
+}
+
+// SaveAsync 异步保存记忆（不阻塞）
+func (m *Manager) SaveAsync(mem *StockMemory) {
+	mem.UpdatedAt = time.Now().UnixMilli()
+	select {
+	case m.saveCh <- mem:
+	default:
+		// 通道满时丢弃，避免阻塞
+		fmt.Printf("memory save channel full, dropping save for %s\n", mem.StockCode)
+	}
+}
+
+// asyncSaveLoop 异步保存循环
+func (m *Manager) asyncSaveLoop() {
+	for {
+		select {
+		case mem := <-m.saveCh:
+			if err := m.storage.Save(mem); err != nil {
+				fmt.Printf("async save memory error: %v\n", err)
+			}
+		case <-m.closeCh:
+			// 退出前保存剩余的
+			for {
+				select {
+				case mem := <-m.saveCh:
+					m.storage.Save(mem)
+				default:
+					return
+				}
+			}
+		}
+	}
 }
 
 // BuildContext 构建上下文（核心方法）
@@ -114,7 +153,9 @@ func (m *Manager) AddRound(ctx context.Context, mem *StockMemory, query, consens
 		}
 	}
 
-	return m.Save(mem)
+	// 异步保存，不阻塞主流程
+	m.SaveAsync(mem)
+	return nil
 }
 
 // compress 压缩旧轮次为摘要
@@ -213,6 +254,9 @@ func (m *Manager) DeleteMemory(stockCode string) error {
 
 // Close 释放资源
 func (m *Manager) Close() {
+	// 关闭异步保存协程
+	close(m.closeCh)
+
 	if jt, ok := m.tokenizer.(*JiebaTokenizer); ok {
 		jt.Free()
 	}

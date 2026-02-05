@@ -7,12 +7,14 @@ import { SettingsDialog } from './components/SettingsDialog';
 import { PositionDialog } from './components/PositionDialog';
 import { HotTrendDialog } from './components/HotTrendDialog';
 import { WelcomePage } from './components/WelcomePage';
+import { ThemeSwitcher } from './components/ThemeSwitcher';
 import { getWatchlist, addToWatchlist, removeFromWatchlist } from './services/watchlistService';
 import { getKLineData, getOrderBook } from './services/stockService';
 import { getOrCreateSession, StockSession, updateStockPosition } from './services/sessionService';
 import { useMarketEvents } from './hooks/useMarketEvents';
 import { Stock, KLineData, OrderBook, TimePeriod, Telegraph, MarketIndex } from './types';
-import { Activity, Radio, Settings, List, Minus, Square, X, Copy, Briefcase, TrendingUp } from 'lucide-react';
+import { Radio, Settings, List, Minus, Square, X, Copy, Briefcase, TrendingUp } from 'lucide-react';
+import logo from './assets/images/logo.png';
 import { GetTelegraphList, OpenURL, GetMarketStatus, GetMarketIndices, WindowMinimize, WindowMaximize, WindowClose } from '../wailsjs/go/main/App';
 import { WindowIsMaximised } from '../wailsjs/runtime/runtime';
 import { services } from '../wailsjs/go/models';
@@ -227,20 +229,18 @@ const App: React.FC = () => {
       {/* Top Navbar */}
       <header className="h-14 fin-panel border-b fin-divider flex items-center px-4 justify-between shrink-0 z-20" style={{ '--wails-draggable': 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}>
-          <div className="bg-gradient-to-br from-sky-500 to-cyan-500 p-1.5 rounded-lg shadow-md shadow-cyan-500/20">
-            <Activity className="text-white h-5 w-5" />
-          </div>
-          <span className="font-bold text-lg tracking-tight">韭菜盘 <span className="text-cyan-400">AI</span></span>
+          <img src={logo} alt="logo" className="h-8 w-8 rounded-lg" />
+          <span className="font-bold text-lg tracking-tight">韭菜盘 <span className="text-accent-2">AI</span></span>
         </div>
         
         <div className="flex items-center gap-4 fin-panel-soft px-4 py-1.5 rounded-full border fin-divider relative" style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}>
-          <Radio className="h-3 w-3 text-green-500 animate-pulse" />
+          <Radio className="h-3 w-3 animate-pulse text-accent-2" />
           <span className="text-xs font-mono text-slate-300 w-96 truncate text-center">
             实时快讯: {marketMessage}
           </span>
           <button
             onClick={handleShowTelegraphList}
-            className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-cyan-400 transition-colors"
+            className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-accent-2 transition-colors"
             title="查看快讯列表"
           >
             <List className="h-4 w-4" />
@@ -267,7 +267,7 @@ const App: React.FC = () => {
                     className="p-3 border-b fin-divider last:border-b-0 hover:bg-slate-800/50 cursor-pointer transition-colors"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="text-xs text-cyan-400 font-mono shrink-0">{tg.time}</span>
+                      <span className="text-xs text-accent-2 font-mono shrink-0">{tg.time}</span>
                       <span className="text-xs text-slate-300 line-clamp-2">{tg.content}</span>
                     </div>
                   </div>
@@ -285,9 +285,10 @@ const App: React.FC = () => {
           >
             <TrendingUp className="h-4 w-4" />
           </button>
+          <ThemeSwitcher />
           <button
             onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg fin-panel border fin-divider text-slate-300 hover:text-white hover:border-cyan-400/40 transition-colors"
+            className="p-2 rounded-lg fin-panel border fin-divider text-slate-300 hover:text-white hover:border-accent/40 transition-colors"
           >
             <Settings className="h-4 w-4" />
           </button>
@@ -351,7 +352,7 @@ const App: React.FC = () => {
                 <span className="text-sm text-slate-400 font-mono">{selectedStock.symbol}</span>
                 <button
                   onClick={() => setShowPosition(true)}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-slate-400 hover:text-accent-2 hover:bg-slate-700/50 transition-colors"
                   title="持仓设置"
                 >
                   <Briefcase className="h-3.5 w-3.5" />

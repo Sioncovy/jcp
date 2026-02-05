@@ -110,7 +110,7 @@ export const StockList: React.FC<StockListProps> = ({
               className="w-full fin-input rounded-lg pl-9 pr-4 py-2 text-sm placeholder-slate-500"
             />
             {isSearching && (
-              <div className="absolute right-3 top-2.5 h-4 w-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+              <div className="absolute right-3 top-2.5 h-4 w-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
             )}
           </div>
 
@@ -126,7 +126,7 @@ export const StockList: React.FC<StockListProps> = ({
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="text-slate-200">{result.name}</span>
-                      <span className="ml-2 font-mono text-cyan-400 text-sm">{result.symbol}</span>
+                      <span className="ml-2 font-mono text-accent-2 text-sm">{result.symbol}</span>
                     </div>
                     <span className="text-xs text-slate-500">{result.market}</span>
                   </div>
@@ -149,7 +149,7 @@ export const StockList: React.FC<StockListProps> = ({
             <div
               key={stock.symbol}
               onClick={() => onSelect(stock.symbol)}
-              className={`group p-4 border-b fin-divider cursor-pointer transition-colors hover:bg-slate-800/60 ${isSelected ? 'bg-slate-800/60 border-l-4 border-l-cyan-400' : 'border-l-4 border-l-transparent'}`}
+              className={`group p-4 border-b fin-divider cursor-pointer transition-colors hover:bg-slate-800/60 ${isSelected ? 'bg-slate-800/60 border-l-4 border-l-accent' : 'border-l-4 border-l-transparent'}`}
             >
               <div className="flex justify-between items-start mb-1">
                 <div className="flex-1 min-w-0">

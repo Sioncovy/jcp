@@ -60,7 +60,7 @@ export const PositionDialog: React.FC<PositionDialogProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b fin-divider">
           <div className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-cyan-400" />
+            <Briefcase className="h-5 w-5 text-accent-2" />
             <span className="font-bold text-slate-100">持仓设置</span>
           </div>
           <button
@@ -78,7 +78,7 @@ export const PositionDialog: React.FC<PositionDialogProps> = ({
               <span className="text-slate-100 font-medium">{stockName}</span>
               <span className="ml-2 text-sm text-slate-400 font-mono">{stockCode}</span>
             </div>
-            <span className="text-lg font-mono text-cyan-400">{currentPrice.toFixed(2)}</span>
+            <span className="text-lg font-mono text-accent-2">{currentPrice.toFixed(2)}</span>
           </div>
         </div>
 
@@ -149,7 +149,7 @@ export const PositionDialog: React.FC<PositionDialogProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg text-sm bg-cyan-500 hover:bg-cyan-600 text-white transition-colors"
+            className="px-4 py-2 rounded-lg text-sm bg-accent hover:bg-accent text-white transition-colors"
           >
             保存
           </button>
