@@ -195,7 +195,7 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 获取大盘指数数据，每5秒刷新一次
+  // 获取大盘指数数据，每3秒刷新一次
   useEffect(() => {
     const fetchMarketIndices = async () => {
       try {

@@ -11,11 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/run-bigpig/jcp/internal/logger"
 	"github.com/run-bigpig/jcp/internal/models"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
+
+var log = logger.New("market")
 
 const (
 	sinaStockURL  = "http://hq.sinajs.cn/rn=%d&list=%s"
@@ -502,15 +505,15 @@ func (ms *MarketService) GenerateOrderBook(price float64) models.OrderBook {
 
 // GetMarketStatus 获取当前市场交易状态
 func (ms *MarketService) GetMarketStatus() MarketStatus {
-	fmt.Println("[GetMarketStatus] 开始获取市场状态")
+	log.Debug("开始获取市场状态")
 	now := time.Now()
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	now = now.In(loc)
-	fmt.Printf("[GetMarketStatus] 当前时间: %s, 星期: %s\n", now.Format("2006-01-02 15:04:05"), now.Weekday())
+	log.Debug("当前时间: %s, 星期: %s", now.Format("2006-01-02 15:04:05"), now.Weekday())
 
 	// 检查是否为交易日
 	isTradeDay, holidayName := ms.isTradeDay(now)
-	fmt.Printf("[GetMarketStatus] isTradeDay=%v, holidayName=%s\n", isTradeDay, holidayName)
+	log.Debug("isTradeDay=%v, holidayName=%s", isTradeDay, holidayName)
 
 	if !isTradeDay {
 		statusText := "休市"
@@ -525,14 +528,14 @@ func (ms *MarketService) GetMarketStatus() MarketStatus {
 			IsTradeDay:  false,
 			HolidayName: holidayName,
 		}
-		fmt.Printf("[GetMarketStatus] 返回结果: %+v\n", result)
+		log.Debug("返回结果: %+v", result)
 		return result
 	}
 
 	// 交易日，判断当前时间段
 	hour, minute := now.Hour(), now.Minute()
 	currentMinutes := hour*60 + minute
-	fmt.Printf("[GetMarketStatus] 交易日时间判断: %02d:%02d, currentMinutes=%d\n", hour, minute, currentMinutes)
+	log.Debug("交易日时间判断: %02d:%02d, currentMinutes=%d", hour, minute, currentMinutes)
 
 	// A股交易时间: 9:30-11:30, 13:00-15:00
 	var result MarketStatus
@@ -550,15 +553,15 @@ func (ms *MarketService) GetMarketStatus() MarketStatus {
 	default:
 		result = MarketStatus{Status: "closed", StatusText: "已收盘", IsTradeDay: true}
 	}
-	fmt.Printf("[GetMarketStatus] 返回结果: %+v\n", result)
+	log.Debug("返回结果: %+v", result)
 	return result
 }
 
 // isTradeDay 判断是否为交易日
 func (ms *MarketService) isTradeDay(_ time.Time) (bool, string) {
-	fmt.Println("[isTradeDay] 开始判断是否为交易日")
+	log.Debug("开始判断是否为交易日")
 	isHoliday, note := ms.getTodayHolidayStatus()
-	fmt.Printf("[isTradeDay] getTodayHolidayStatus返回: isHoliday=%v, note=%s\n", isHoliday, note)
+	log.Debug("getTodayHolidayStatus返回: isHoliday=%v, note=%s", isHoliday, note)
 	if isHoliday {
 		return false, note
 	}
@@ -567,19 +570,19 @@ func (ms *MarketService) isTradeDay(_ time.Time) (bool, string) {
 
 // getTodayHolidayStatus 获取当天节假日状态（带缓存）
 func (ms *MarketService) getTodayHolidayStatus() (bool, string) {
-	fmt.Println("[getTodayHolidayStatus] 检查缓存")
+	log.Debug("检查缓存")
 	ms.todayCacheMu.RLock()
 	if ms.todayCache != nil && time.Since(ms.todayCache.timestamp) < time.Hour {
 		defer ms.todayCacheMu.RUnlock()
-		fmt.Printf("[getTodayHolidayStatus] 命中缓存: isHoliday=%v, note=%s\n", ms.todayCache.isHoliday, ms.todayCache.note)
+		log.Debug("命中缓存: isHoliday=%v, note=%s", ms.todayCache.isHoliday, ms.todayCache.note)
 		return ms.todayCache.isHoliday, ms.todayCache.note
 	}
 	ms.todayCacheMu.RUnlock()
 
 	// 缓存过期或不存在，重新获取
-	fmt.Println("[getTodayHolidayStatus] 缓存未命中，调用API")
+	log.Debug("缓存未命中，调用API")
 	isHoliday, note := ms.fetchTodayHolidayStatus()
-	fmt.Printf("[getTodayHolidayStatus] API返回: isHoliday=%v, note=%s\n", isHoliday, note)
+	log.Debug("API返回: isHoliday=%v, note=%s", isHoliday, note)
 
 	ms.todayCacheMu.Lock()
 	ms.todayCache = &todayHolidayCache{
