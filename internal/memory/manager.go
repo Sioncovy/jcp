@@ -257,7 +257,7 @@ func (m *Manager) Close() {
 	// 关闭异步保存协程
 	close(m.closeCh)
 
-	if jt, ok := m.tokenizer.(*JiebaTokenizer); ok {
+	if jt, ok := m.tokenizer.(*GseTokenizer); ok {
 		jt.Free()
 	}
 }

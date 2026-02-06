@@ -14,6 +14,10 @@ export function AddToWatchlist(arg1) {
   return window['go']['main']['App']['AddToWatchlist'](arg1);
 }
 
+export function CheckForUpdate() {
+  return window['go']['main']['App']['CheckForUpdate']();
+}
+
 export function ClearSessionMessages(arg1) {
   return window['go']['main']['App']['ClearSessionMessages'](arg1);
 }
@@ -24,6 +28,10 @@ export function DeleteAgentConfig(arg1) {
 
 export function DeleteMCPServer(arg1) {
   return window['go']['main']['App']['DeleteMCPServer'](arg1);
+}
+
+export function DoUpdate() {
+  return window['go']['main']['App']['DoUpdate']();
 }
 
 export function GetAgentConfigs() {
@@ -40,6 +48,10 @@ export function GetAvailableTools() {
 
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
+}
+
+export function GetCurrentVersion() {
+  return window['go']['main']['App']['GetCurrentVersion']();
 }
 
 export function GetHotTrend(arg1) {
@@ -108,6 +120,10 @@ export function OpenURL(arg1) {
 
 export function RemoveFromWatchlist(arg1) {
   return window['go']['main']['App']['RemoveFromWatchlist'](arg1);
+}
+
+export function RestartApp() {
+  return window['go']['main']['App']['RestartApp']();
 }
 
 export function SearchStocks(arg1) {

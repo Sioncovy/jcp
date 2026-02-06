@@ -594,6 +594,28 @@ export namespace services {
 	        this.url = source["url"];
 	    }
 	}
+	export class UpdateInfo {
+	    hasUpdate: boolean;
+	    latestVersion: string;
+	    currentVersion: string;
+	    releaseUrl: string;
+	    releaseNotes: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hasUpdate = source["hasUpdate"];
+	        this.latestVersion = source["latestVersion"];
+	        this.currentVersion = source["currentVersion"];
+	        this.releaseUrl = source["releaseUrl"];
+	        this.releaseNotes = source["releaseNotes"];
+	        this.error = source["error"];
+	    }
+	}
 
 }
 

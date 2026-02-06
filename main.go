@@ -11,6 +11,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// Version 版本号，通过 ldflags 注入
+var Version = "dev"
+
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()

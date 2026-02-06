@@ -3,7 +3,8 @@ package memory
 import (
 	"strings"
 
-	"github.com/yanyiwu/gojieba"
+	"github.com/go-ego/gse"
+	"github.com/go-ego/gse/hmm/extracker"
 )
 
 // Tokenizer 分词器接口
@@ -12,34 +13,38 @@ type Tokenizer interface {
 	Cut(text string) []string
 }
 
-// JiebaTokenizer 基于 jieba 的分词器
-type JiebaTokenizer struct {
-	jieba     *gojieba.Jieba
+// GseTokenizer 基于 GSE 的分词器（纯 Go 实现，无 CGO 依赖）
+type GseTokenizer struct {
+	seg       gse.Segmenter
+	extractor extracker.TagExtracter
 	stopWords map[string]bool
 }
 
-// NewJiebaTokenizer 创建 jieba 分词器
-func NewJiebaTokenizer() *JiebaTokenizer {
-	return &JiebaTokenizer{
-		jieba:     gojieba.NewJieba(),
+// NewJiebaTokenizer 创建分词器（保持函数名兼容）
+func NewJiebaTokenizer() *GseTokenizer {
+	t := &GseTokenizer{
 		stopWords: defaultStopWords(),
 	}
+	// 加载内嵌的中文词典
+	t.seg.LoadDictEmbed("zh")
+	// 初始化关键词提取器
+	t.extractor.WithGse(t.seg)
+	t.extractor.LoadIdf()
+	return t
 }
 
-// Free 释放资源
-func (t *JiebaTokenizer) Free() {
-	if t.jieba != nil {
-		t.jieba.Free()
-	}
+// Free 释放资源（GSE 不需要手动释放，保持接口兼容）
+func (t *GseTokenizer) Free() {
+	// GSE 是纯 Go 实现，不需要手动释放资源
 }
 
 // Extract 提取关键词（使用 TF-IDF）
-func (t *JiebaTokenizer) Extract(text string, topK int) []string {
-	words := t.jieba.ExtractWithWeight(text, topK*2)
+func (t *GseTokenizer) Extract(text string, topK int) []string {
+	segments := t.extractor.ExtractTags(text, topK*2)
 	result := make([]string, 0, topK)
-	for _, w := range words {
-		if !t.stopWords[w.Word] && len([]rune(w.Word)) >= 2 {
-			result = append(result, w.Word)
+	for _, seg := range segments {
+		if !t.stopWords[seg.Text] && len([]rune(seg.Text)) >= 2 {
+			result = append(result, seg.Text)
 			if len(result) >= topK {
 				break
 			}
@@ -49,8 +54,8 @@ func (t *JiebaTokenizer) Extract(text string, topK int) []string {
 }
 
 // Cut 分词
-func (t *JiebaTokenizer) Cut(text string) []string {
-	words := t.jieba.Cut(text, true)
+func (t *GseTokenizer) Cut(text string) []string {
+	words := t.seg.Cut(text, true)
 	result := make([]string, 0, len(words))
 	for _, w := range words {
 		w = strings.TrimSpace(w)

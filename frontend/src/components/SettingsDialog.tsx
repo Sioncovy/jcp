@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Cpu, Bot, ChevronLeft, Plug, Plus, Trash2, Wrench, Sliders, Check, Loader2, Brain } from 'lucide-react';
+import { X, Cpu, Bot, ChevronLeft, Plug, Plus, Trash2, Wrench, Sliders, Check, Loader2, Brain, RefreshCw, Download, RotateCcw } from 'lucide-react';
 import { getConfig, updateConfig, getAvailableTools, ToolInfo } from '../services/configService';
 import { getAgentConfigs, updateAgentConfig, AgentConfig } from '../services/agentConfigService';
 import { getMCPServers, MCPServerConfig, MCPServerStatus, testMCPConnection, getMCPServerTools, MCPToolInfo } from '../services/mcpService';
+import { checkForUpdate, doUpdate, restartApp, getCurrentVersion, onUpdateProgress, UpdateInfo, UpdateProgress } from '../services/updateService';
 
 interface AIConfig {
   id: string;
@@ -28,7 +29,7 @@ interface MemoryConfig {
   compressThreshold: number;
 }
 
-type TabType = 'provider' | 'agent' | 'mcp' | 'memory';
+type TabType = 'provider' | 'agent' | 'mcp' | 'memory' | 'update';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -147,6 +148,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     { id: 'agent', label: 'AI专家', icon: <Bot className="h-4 w-4" /> },
     { id: 'mcp', label: 'MCP服务', icon: <Plug className="h-4 w-4" /> },
     { id: 'memory', label: '记忆管理', icon: <Brain className="h-4 w-4" /> },
+    { id: 'update', label: '软件更新', icon: <RefreshCw className="h-4 w-4" /> },
   ];
 
   return (
@@ -219,6 +221,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 aiConfigs={aiConfigs}
                 onChange={setMemoryConfig}
               />
+            )}
+            {activeTab === 'update' && (
+              <UpdateSettings />
             )}
           </div>
         </div>
@@ -1219,6 +1224,126 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
               </div>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ========== 更新设置选项卡 ==========
+const UpdateSettings: React.FC = () => {
+  const [currentVersion, setCurrentVersion] = useState<string>('');
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [progress, setProgress] = useState<UpdateProgress | null>(null);
+
+  useEffect(() => {
+    getCurrentVersion().then(setCurrentVersion);
+    const cleanup = onUpdateProgress(setProgress);
+    return cleanup;
+  }, []);
+
+  const handleCheckUpdate = async () => {
+    setChecking(true);
+    setUpdateInfo(null);
+    try {
+      const info = await checkForUpdate();
+      setUpdateInfo(info);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    setUpdating(true);
+    setProgress(null);
+    try {
+      const result = await doUpdate();
+      if (result !== 'success') {
+        setProgress({ status: 'error', message: result, percent: 0 });
+      }
+    } catch (e) {
+      setProgress({ status: 'error', message: String(e), percent: 0 });
+    }
+  };
+
+  const handleRestart = async () => {
+    await restartApp();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-white font-medium">软件更新</h3>
+        <p className="text-slate-400 text-sm mt-1">检查并安装最新版本</p>
+      </div>
+
+      <div className="fin-panel rounded-lg p-4 border fin-divider">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-slate-400 text-sm">当前版本</span>
+            <p className="text-white font-medium mt-1">v{currentVersion || '...'}</p>
+          </div>
+          <button
+            onClick={handleCheckUpdate}
+            disabled={checking || updating}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm disabled:opacity-50 transition-colors"
+          >
+            {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {checking ? '检查中...' : '检查更新'}
+          </button>
+        </div>
+      </div>
+
+      {updateInfo && (
+        <div className={`fin-panel rounded-lg p-4 border ${updateInfo.hasUpdate ? 'border-accent/50 bg-accent/5' : 'fin-divider'}`}>
+          {updateInfo.error ? (
+            <div className="text-red-400 text-sm">{updateInfo.error}</div>
+          ) : updateInfo.hasUpdate ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-accent-2 text-sm font-medium">发现新版本</span>
+                  <p className="text-white font-medium mt-1">v{updateInfo.latestVersion}</p>
+                </div>
+                <button onClick={handleUpdate} disabled={updating}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm disabled:opacity-50">
+                  {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {updating ? '更新中...' : '立即更新'}
+                </button>
+              </div>
+              {updateInfo.releaseNotes && (
+                <div className="pt-3 border-t fin-divider">
+                  <span className="text-slate-400 text-xs">更新说明</span>
+                  <p className="text-slate-300 text-sm mt-1 whitespace-pre-wrap">{updateInfo.releaseNotes}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-accent-2">
+              <Check className="h-4 w-4" /><span className="text-sm">已是最新版本</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {progress && (
+        <div className="fin-panel rounded-lg p-4 border fin-divider">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-slate-400 text-sm">{progress.message}</span>
+            {progress.status === 'completed' && (
+              <button onClick={handleRestart} className="flex items-center gap-2 px-3 py-1.5 bg-accent text-white rounded-lg text-xs">
+                <RotateCcw className="h-3 w-3" />重启应用
+              </button>
+            )}
+          </div>
+          {progress.percent > 0 && (
+            <div className="w-full bg-slate-700 rounded-full h-2">
+              <div className={`h-2 rounded-full transition-all ${progress.status === 'error' ? 'bg-red-500' : progress.status === 'completed' ? 'bg-accent' : 'bg-accent-2'}`}
+                style={{ width: `${progress.percent}%` }} />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -30,7 +30,7 @@
 | **UI** | TailwindCSS + Lucide Icons |
 | **图表** | Recharts |
 | **AI** | OpenAI / Google Gemini API |
-| **分词** | Jieba (gojieba) |
+| **分词** | GSE (纯 Go 实现，无 CGO 依赖) |
 
 ## 功能展示
 
@@ -62,10 +62,6 @@
 - Go 1.24+
 - Node.js 18+
 - Wails CLI v2
-- **CGO 环境**（记忆系统依赖 jieba 分词库）
-  - Windows: 需安装 MinGW-w64 或 TDM-GCC
-  - macOS: 需安装 Xcode Command Line Tools
-  - Linux: 需安装 gcc/g++
 
 ### 安装 Wails CLI
 
@@ -98,20 +94,18 @@ wails dev
 
 ### 构建发布版本
 
-> **重要**: 本项目使用了 jieba 分词库，编译时必须启用 CGO。
-
 ```bash
-# 确保 CGO 已启用
-export CGO_ENABLED=1
-
 # 构建当前平台
 wails build
 
-# 构建 Windows 版本 (需要 MinGW 交叉编译环境)
-CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc wails build -platform windows/amd64
+# 构建 Windows 版本
+wails build -platform windows/amd64
 
 # 构建 macOS 版本
 wails build -platform darwin/amd64
+
+# 构建 Linux 版本
+wails build -platform linux/amd64
 ```
 
 ## 配置说明
@@ -230,3 +224,4 @@ Agent 配置可在 `data/agents.json` 中自定义。
 - [React](https://reactjs.org/) - 前端 UI 框架
 - [TailwindCSS](https://tailwindcss.com/) - CSS 框架
 - [Recharts](https://recharts.org/) - 图表库
+- [GSE](https://github.com/go-ego/gse) - 高性能中文分词库

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Stock } from '../types';
 import { searchStocks, StockSearchResult } from '../services/stockService';
-import { Search, Activity, TrendingUp, X } from 'lucide-react';
+import { Search, TrendingUp, X } from 'lucide-react';
 import { WindowClose } from '../../wailsjs/go/main/App';
+import logo from '../assets/images/logo.png';
 
 interface WelcomePageProps {
   onAddStock: (stock: Stock) => void;
@@ -87,9 +88,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onAddStock }) => {
 
       {/* Logo 和标题 */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] p-3 rounded-xl shadow-lg shadow-[var(--accent)]">
-          <Activity className="text-white h-8 w-8" />
-        </div>
+        <img src={logo} alt="Logo" className="h-14 w-14 rounded-lg" />
         <div>
           <h1 className="text-3xl font-bold text-white">
             韭菜盘 <span className="text-accent-2">AI</span>

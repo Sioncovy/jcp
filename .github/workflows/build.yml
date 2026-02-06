@@ -11,7 +11,6 @@ permissions:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=4096"
-  CGO_ENABLED: 1
 
 jobs:
   build:
@@ -21,14 +20,26 @@ jobs:
         include:
           - platform: linux/amd64
             os: ubuntu-latest
+            goos: linux
+            goarch: amd64
             output: jcp
             suffix: tar.gz
           - platform: windows/amd64
             os: windows-latest
+            goos: windows
+            goarch: amd64
             output: jcp.exe
             suffix: zip
-          - platform: darwin/universal
+          - platform: darwin/amd64
             os: macos-latest
+            goos: darwin
+            goarch: amd64
+            output: jcp.app
+            suffix: zip
+          - platform: darwin/arm64
+            os: macos-latest
+            goos: darwin
+            goarch: arm64
             output: jcp.app
             suffix: zip
 
@@ -59,45 +70,56 @@ jobs:
       - name: Install Wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
+      - name: Get Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+          else
+            VERSION="0.0.0-dev"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Build (Linux)
         if: runner.os == 'Linux'
-        run: wails build -platform ${{ matrix.platform }} -tags webkit2_41
+        run: |
+          wails build -platform ${{ matrix.platform }} -tags webkit2_41 \
+            -ldflags "-X main.Version=${{ steps.version.outputs.version }}"
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
-        run: wails build -platform ${{ matrix.platform }} -ldflags "-extldflags '-static'"
+        run: |
+          wails build -platform ${{ matrix.platform }} -ldflags "-X main.Version=${{ steps.version.outputs.version }} -H windowsgui"
 
       - name: Build (macOS)
         if: runner.os == 'macOS'
-        run: wails build -platform ${{ matrix.platform }}
-
-      - name: Get Version
-        id: version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        shell: bash
+        run: |
+          wails build -platform ${{ matrix.platform }} \
+            -ldflags "-X main.Version=${{ steps.version.outputs.version }}"
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
         run: |
           cd build/bin
-          tar -czvf jcp-linux-${{ steps.version.outputs.version }}.${{ matrix.suffix }} ${{ matrix.output }}
+          tar -czvf jcp_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.suffix }} ${{ matrix.output }}
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
         run: |
-          Compress-Archive -Path build/bin/${{ matrix.output }} -DestinationPath build/bin/jcp-windows-${{ steps.version.outputs.version }}.${{ matrix.suffix }}
+          Compress-Archive -Path build/bin/${{ matrix.output }} -DestinationPath build/bin/jcp_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.suffix }}
 
       - name: Package (macOS)
         if: runner.os == 'macOS'
         run: |
           cd build/bin
-          ls -la
-          zip -r jcp-macos-${{ steps.version.outputs.version }}.${{ matrix.suffix }} *.app
+          zip -r jcp_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.suffix }} *.app
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: jcp-${{ runner.os }}-${{ steps.version.outputs.version }}
+          name: jcp-${{ matrix.goos }}-${{ matrix.goarch }}
           path: build/bin/*.${{ matrix.suffix }}
 
   release:

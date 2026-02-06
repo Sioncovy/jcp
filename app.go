@@ -34,6 +34,7 @@ type App struct {
 	toolRegistry       *tools.Registry
 	mcpManager         *mcp.Manager
 	memoryManager      *memory.Manager
+	updateService      *services.UpdateService
 }
 
 // NewApp creates a new App application struct
@@ -108,6 +109,9 @@ func NewApp() *App {
 	agentContainer := agent.NewContainer()
 	agentContainer.LoadAgents(agentConfigService.GetAllAgents())
 
+	// 初始化更新服务
+	updateService := services.NewUpdateService("run-bigpig", "jcp", Version)
+
 	log.Info("所有服务初始化完成")
 
 	return &App{
@@ -122,6 +126,7 @@ func NewApp() *App {
 		toolRegistry:       toolRegistry,
 		mcpManager:         mcpManager,
 		memoryManager:      memoryManager,
+		updateService:      updateService,
 	}
 }
 
@@ -129,6 +134,11 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// 初始化更新服务
+	if a.updateService != nil {
+		a.updateService.Startup(ctx)
+	}
 
 	// 初始化并启动市场数据推送服务（需要 context）
 	a.marketPusher = services.NewMarketDataPusher(a.marketService, a.configService, a.newsService)
@@ -639,4 +649,44 @@ func (a *App) GetAllHotTrends() []hottrend.HotTrendResult {
 		return []hottrend.HotTrendResult{}
 	}
 	return a.hotTrendService.GetAllHotTrends()
+}
+
+// ========== Update API ==========
+
+// CheckForUpdate 检查更新
+func (a *App) CheckForUpdate() services.UpdateInfo {
+	if a.updateService == nil {
+		return services.UpdateInfo{Error: "更新服务未初始化"}
+	}
+	return a.updateService.CheckForUpdate()
+}
+
+// DoUpdate 执行更新
+func (a *App) DoUpdate() string {
+	if a.updateService == nil {
+		return "更新服务未初始化"
+	}
+	if err := a.updateService.Update(); err != nil {
+		return err.Error()
+	}
+	return "success"
+}
+
+// RestartApp 重启应用
+func (a *App) RestartApp() string {
+	if a.updateService == nil {
+		return "更新服务未初始化"
+	}
+	if err := a.updateService.RestartApplication(); err != nil {
+		return err.Error()
+	}
+	return "success"
+}
+
+// GetCurrentVersion 获取当前版本
+func (a *App) GetCurrentVersion() string {
+	if a.updateService == nil {
+		return "unknown"
+	}
+	return a.updateService.GetCurrentVersion()
 }
