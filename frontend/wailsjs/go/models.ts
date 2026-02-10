@@ -245,10 +245,8 @@ export namespace models {
 	    instruction: string;
 	    tools: string[];
 	    mcpServers: string[];
-	    priority: number;
-	    isBuiltin: boolean;
 	    enabled: boolean;
-	    providerId: string;
+	    aiConfigId: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AgentConfig(source);
@@ -264,10 +262,8 @@ export namespace models {
 	        this.instruction = source["instruction"];
 	        this.tools = source["tools"];
 	        this.mcpServers = source["mcpServers"];
-	        this.priority = source["priority"];
-	        this.isBuiltin = source["isBuiltin"];
 	        this.enabled = source["enabled"];
-	        this.providerId = source["providerId"];
+	        this.aiConfigId = source["aiConfigId"];
 	    }
 	}
 	export class ProxyConfig {
@@ -336,6 +332,8 @@ export namespace models {
 	    theme: string;
 	    aiConfigs: AIConfig[];
 	    defaultAiId: string;
+	    strategyAiId: string;
+	    moderatorAiId: string;
 	    mcpServers: MCPServerConfig[];
 	    memory: MemoryConfig;
 	    proxy: ProxyConfig;
@@ -349,6 +347,8 @@ export namespace models {
 	        this.theme = source["theme"];
 	        this.aiConfigs = this.convertValues(source["aiConfigs"], AIConfig);
 	        this.defaultAiId = source["defaultAiId"];
+	        this.strategyAiId = source["strategyAiId"];
+	        this.moderatorAiId = source["moderatorAiId"];
 	        this.mcpServers = this.convertValues(source["mcpServers"], MCPServerConfig);
 	        this.memory = this.convertValues(source["memory"], MemoryConfig);
 	        this.proxy = this.convertValues(source["proxy"], ProxyConfig);
@@ -670,6 +670,7 @@ export namespace models {
 	    tools: string[];
 	    mcpServers: string[];
 	    enabled: boolean;
+	    aiConfigId: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new StrategyAgent(source);
@@ -686,6 +687,7 @@ export namespace models {
 	        this.tools = source["tools"];
 	        this.mcpServers = source["mcpServers"];
 	        this.enabled = source["enabled"];
+	        this.aiConfigId = source["aiConfigId"];
 	    }
 	}
 	export class Strategy {

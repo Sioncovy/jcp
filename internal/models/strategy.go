@@ -11,6 +11,7 @@ type StrategyAgent struct {
 	Tools       []string `json:"tools"`
 	MCPServers  []string `json:"mcpServers"`
 	Enabled     bool     `json:"enabled"`
+	AIConfigID  string   `json:"aiConfigId"` // 可选，空则用默认AI
 }
 
 // Strategy 策略配置

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -573,9 +572,8 @@ func (s *StrategyService) getAgentConfigsFromStrategy() []models.AgentConfig {
 			Instruction: sa.Instruction,
 			Tools:       sa.Tools,
 			MCPServers:  sa.MCPServers,
-			Priority:    i + 1,
-			IsBuiltin:   strategy.IsBuiltin,
 			Enabled:     sa.Enabled,
+			AIConfigID:  sa.AIConfigID,
 		}
 	}
 	return agents
@@ -583,11 +581,7 @@ func (s *StrategyService) getAgentConfigsFromStrategy() []models.AgentConfig {
 
 // GetAllAgents 获取所有Agent配置
 func (s *StrategyService) GetAllAgents() []models.AgentConfig {
-	agents := s.getAgentConfigsFromStrategy()
-	sort.Slice(agents, func(i, j int) bool {
-		return agents[i].Priority < agents[j].Priority
-	})
-	return agents
+	return s.getAgentConfigsFromStrategy()
 }
 
 // GetEnabledAgents 获取已启用的Agent
@@ -599,9 +593,6 @@ func (s *StrategyService) GetEnabledAgents() []models.AgentConfig {
 			result = append(result, agent)
 		}
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Priority < result[j].Priority
-	})
 	return result
 }
 

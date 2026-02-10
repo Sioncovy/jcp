@@ -11,6 +11,7 @@ export interface StrategyAgent {
   tools: string[];
   mcpServers: string[];
   enabled: boolean;
+  aiConfigId: string;
 }
 
 export interface Strategy {
@@ -84,6 +85,7 @@ export interface AgentConfig {
   tools: string[];
   mcpServers: string[];
   enabled: boolean;
+  aiConfigId: string;
 }
 
 // 获取所有已启用的Agent配置

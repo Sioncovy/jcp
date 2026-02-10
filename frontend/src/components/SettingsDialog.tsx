@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Cpu, ChevronLeft, Plug, Plus, Trash2, Wrench, Check, Loader2, Brain, RefreshCw, Download, RotateCcw, Globe, Layers, Sliders } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Cpu, ChevronLeft, Plug, Plus, Trash2, Wrench, Check, Loader2, Brain, RefreshCw, Download, RotateCcw, Globe, Layers, Sliders, Star, MessageSquare } from 'lucide-react';
 import { getConfig, updateConfig, getAvailableTools, ToolInfo } from '../services/configService';
-import { getAgentConfigs, updateAgentConfig, AgentConfig } from '../services/strategyService';
+import { getAgentConfigs } from '../services/strategyService';
 import { getMCPServers, MCPServerConfig, MCPServerStatus, testMCPConnection, getMCPServerTools, MCPToolInfo } from '../services/mcpService';
 import { checkForUpdate, doUpdate, restartApp, getCurrentVersion, onUpdateProgress, UpdateInfo, UpdateProgress } from '../services/updateService';
 import { getStrategies, getActiveStrategyID, setActiveStrategy, deleteStrategy, generateStrategy, updateStrategy, Strategy, StrategyAgent } from '../services/strategyService';
@@ -43,24 +43,44 @@ interface ProxyConfig {
   customUrl: string;
 }
 
-type TabType = 'provider' | 'strategy' | 'mcp' | 'memory' | 'proxy' | 'update';
+type TabType = 'provider' | 'intent' | 'strategy' | 'mcp' | 'memory' | 'proxy' | 'update';
 
 interface SettingsDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Toast 通知 hook
+interface ToastState {
+  show: boolean;
+  type: 'success' | 'error' | 'loading';
+  message: string;
+}
+
+const useSettingsToast = () => {
+  const [toast, setToast] = useState<ToastState>({ show: false, type: 'success', message: '' });
+
+  const showToast = useCallback((type: ToastState['type'], message: string) => {
+    setToast({ show: true, type, message });
+    if (type !== 'loading') {
+      setTimeout(() => setToast(prev => ({ ...prev, show: false })), 2000);
+    }
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToast(prev => ({ ...prev, show: false }));
+  }, []);
+
+  return { toast, showToast, hideToast };
+};
+
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('provider');
   const [aiConfigs, setAiConfigs] = useState<AIConfig[]>([]);
-  const [agentConfigs, setAgentConfigs] = useState<AgentConfig[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<string>('openai');
   const [mcpServers, setMcpServers] = useState<MCPServerConfig[]>([]);
   const [mcpStatus, setMcpStatus] = useState<Record<string, MCPServerStatus>>({});
   const [mcpTools, setMcpTools] = useState<Record<string, MCPToolInfo[]>>({});
   const [selectedMCP, setSelectedMCP] = useState<MCPServerConfig | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [memoryConfig, setMemoryConfig] = useState<MemoryConfig>({
     enabled: true,
     aiConfigId: '',
@@ -75,17 +95,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   });
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [activeStrategyId, setActiveStrategyId] = useState<string>('');
+  const [moderatorAiId, setModeratorAiId] = useState<string>('');
 
-  // 原始配置（用于变更检测）
-  const [originalConfigs, setOriginalConfigs] = useState<{
-    aiConfigs: AIConfig[];
-    agentConfigs: AgentConfig[];
-    mcpServers: MCPServerConfig[];
-  } | null>(null);
-  // 完整的原始 AppConfig（用于保存时保留其他字段）
-  const [fullConfig, setFullConfig] = useState<{
-    theme: string;
-  } | null>(null);
+  // Toast 通知
+  const { toast, showToast, hideToast } = useSettingsToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -95,35 +108,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   const loadAllConfigs = async () => {
     const config = await getConfig();
-    const loadedAiConfigs = config.aiConfigs || [];
-    setAiConfigs(loadedAiConfigs);
-    const agents = await getAgentConfigs();
-    const loadedAgents = agents || [];
-    setAgentConfigs(loadedAgents);
+    setAiConfigs(config.aiConfigs || []);
     const mcps = await getMCPServers();
-    const loadedMcps = mcps || [];
-    setMcpServers(loadedMcps);
-    // 加载记忆配置
-    if (config.memory) {
-      setMemoryConfig(config.memory);
-    }
-    // 加载代理配置
+    setMcpServers(mcps || []);
+    if (config.memory) setMemoryConfig(config.memory);
     if (config.proxy) {
       setProxyConfig({
         mode: config.proxy.mode as ProxyMode,
         customUrl: config.proxy.customUrl || '',
       });
     }
-    // 保存完整配置的其他字段
-    setFullConfig({
-      theme: config.theme || 'military',
-    });
-    // 保存原始配置用于变更检测
-    setOriginalConfigs({
-      aiConfigs: JSON.parse(JSON.stringify(loadedAiConfigs)),
-      agentConfigs: JSON.parse(JSON.stringify(loadedAgents)),
-      mcpServers: JSON.parse(JSON.stringify(loadedMcps)),
-    });
+    if (config.moderatorAiId) setModeratorAiId(config.moderatorAiId);
 
     // 加载策略配置
     const loadedStrategies = await getStrategies();
@@ -131,12 +126,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     const activeId = await getActiveStrategyID();
     setActiveStrategyId(activeId);
 
-    // 自动检测所有已启用的 MCP 服务器状态并获取工具列表
-    const enabledMcps = loadedMcps.filter(m => m.enabled);
+    // 自动检测已启用的 MCP 服务器状态
+    const enabledMcps = (mcps || []).filter(m => m.enabled);
     for (const mcp of enabledMcps) {
       testMCPConnection(mcp.id).then(status => {
         setMcpStatus(prev => ({ ...prev, [mcp.id]: status }));
-        // 连接成功后获取工具列表
         if (status.connected) {
           getMCPServerTools(mcp.id).then(tools => {
             setMcpTools(prev => ({ ...prev, [mcp.id]: tools || [] }));
@@ -146,41 +140,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   };
 
-  if (!isOpen) return null;
-
-  // 检测配置是否有变更
-  const hasChanges = (): boolean => {
-    if (!originalConfigs) return false;
-    return (
-      JSON.stringify(aiConfigs) !== JSON.stringify(originalConfigs.aiConfigs) ||
-      JSON.stringify(agentConfigs) !== JSON.stringify(originalConfigs.agentConfigs) ||
-      JSON.stringify(mcpServers) !== JSON.stringify(originalConfigs.mcpServers)
-    );
-  };
-
-  // 处理关闭
-  const handleClose = () => {
-    if (hasChanges()) {
-      setShowCloseConfirm(true);
-    } else {
-      onClose();
+  // 即时保存配置的通用函数
+  const saveConfig = useCallback(async (updates: Partial<{
+    aiConfigs: AIConfig[];
+    mcpServers: MCPServerConfig[];
+    memory: MemoryConfig;
+    proxy: ProxyConfig;
+    moderatorAiId: string;
+  }>) => {
+    showToast('loading', '保存中...');
+    try {
+      const currentConfig = await getConfig();
+      await updateConfig({
+        ...currentConfig,
+        ...updates,
+        defaultAiId: (updates.aiConfigs || currentConfig.aiConfigs)?.find(c => c.isDefault)?.id || '',
+      } as any);
+      hideToast();
+      showToast('success', '已保存');
+    } catch (e) {
+      hideToast();
+      showToast('error', '保存失败');
     }
-  };
+  }, [showToast, hideToast]);
 
-  // 不保存直接关闭
-  const handleDiscardAndClose = () => {
-    setShowCloseConfirm(false);
-    onClose();
-  };
-
-  // 保存后关闭
-  const handleSaveAndClose = async () => {
-    setShowCloseConfirm(false);
-    await handleSave(aiConfigs, agentConfigs, mcpServers, memoryConfig, proxyConfig, fullConfig, setSaving, onClose);
-  };
+  if (!isOpen) return null;
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'provider', label: '模型基座', icon: <Cpu className="h-4 w-4" /> },
+    { id: 'intent', label: '意图配置', icon: <MessageSquare className="h-4 w-4" /> },
     { id: 'strategy', label: '策略管理', icon: <Layers className="h-4 w-4" /> },
     { id: 'mcp', label: 'MCP服务', icon: <Plug className="h-4 w-4" /> },
     { id: 'memory', label: '记忆管理', icon: <Brain className="h-4 w-4" /> },
@@ -191,7 +179,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
       <div className="fin-panel border fin-divider rounded-xl w-[720px] max-h-[85vh] overflow-hidden shadow-2xl">
-        <Header onClose={handleClose} />
+        <Header onClose={onClose} />
         <div className="flex h-[500px]">
           {/* 左侧选项卡 */}
           <div className="w-44 fin-panel-strong border-r fin-divider p-2">
@@ -215,9 +203,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             {activeTab === 'provider' && (
               <ProviderSettings
                 configs={aiConfigs}
-                selectedProvider={selectedProvider}
-                onSelectProvider={setSelectedProvider}
-                onChange={setAiConfigs}
+                onChange={(configs) => {
+                  setAiConfigs(configs);
+                  saveConfig({ aiConfigs: configs });
+                }}
+              />
+            )}
+            {activeTab === 'intent' && (
+              <IntentSettings
+                configs={aiConfigs}
+                moderatorAiId={moderatorAiId}
+                onModeratorAiIdChange={(id) => {
+                  setModeratorAiId(id);
+                  saveConfig({ moderatorAiId: id });
+                }}
               />
             )}
             {activeTab === 'strategy' && (
@@ -227,10 +226,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 onStrategiesChange={setStrategies}
                 onActiveChange={setActiveStrategyId}
                 onAgentsReload={async () => {
-                  const agents = await getAgentConfigs();
-                  setAgentConfigs(agents || []);
+                  await getAgentConfigs();
                 }}
                 mcpServers={mcpServers}
+                aiConfigs={aiConfigs}
+                showToast={showToast}
               />
             )}
             {activeTab === 'mcp' && (
@@ -240,7 +240,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 mcpTools={mcpTools}
                 selectedMCP={selectedMCP}
                 onSelectMCP={setSelectedMCP}
-                onServersChange={setMcpServers}
+                onServersChange={(servers) => {
+                  setMcpServers(servers);
+                  saveConfig({ mcpServers: servers });
+                }}
                 onTestConnection={async (id) => {
                   const status = await testMCPConnection(id);
                   setMcpStatus(prev => ({ ...prev, [id]: status }));
@@ -256,13 +259,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               <MemorySettings
                 config={memoryConfig}
                 aiConfigs={aiConfigs}
-                onChange={setMemoryConfig}
+                onChange={(config) => {
+                  setMemoryConfig(config);
+                  saveConfig({ memory: config });
+                }}
               />
             )}
             {activeTab === 'proxy' && (
               <ProxySettings
                 config={proxyConfig}
-                onChange={setProxyConfig}
+                onChange={(config) => {
+                  setProxyConfig(config);
+                  saveConfig({ proxy: config });
+                }}
               />
             )}
             {activeTab === 'update' && (
@@ -270,20 +279,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             )}
           </div>
         </div>
-        <Footer
-          saving={saving}
-          onSave={() => handleSave(aiConfigs, agentConfigs, mcpServers, memoryConfig, proxyConfig, fullConfig, setSaving, onClose)}
-          onClose={handleClose}
-        />
       </div>
 
-      {/* 关闭确认对话框 */}
-      {showCloseConfirm && (
-        <CloseConfirmDialog
-          onSave={handleSaveAndClose}
-          onDiscard={handleDiscardAndClose}
-          onCancel={() => setShowCloseConfirm(false)}
-        />
+      {/* Toast 通知 */}
+      {toast.show && (
+        <div className="fixed bottom-4 right-4 z-[100]">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border backdrop-blur-sm ${
+            toast.type === 'success' ? 'bg-green-500/10 border-green-500/30' :
+            toast.type === 'error' ? 'bg-red-500/10 border-red-500/30' :
+            'bg-blue-500/10 border-blue-500/30'
+          }`}>
+            {toast.type === 'success' && <Check className="h-4 w-4 text-green-400" />}
+            {toast.type === 'error' && <X className="h-4 w-4 text-red-400" />}
+            {toast.type === 'loading' && <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />}
+            <span className="text-sm text-white">{toast.message}</span>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -298,66 +309,39 @@ const Header: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   </div>
 );
 
-// ========== 关闭确认对话框 ==========
-interface CloseConfirmDialogProps {
-  onSave: () => void;
-  onDiscard: () => void;
-  onCancel: () => void;
-}
-
-const CloseConfirmDialog: React.FC<CloseConfirmDialogProps> = ({ onSave, onDiscard, onCancel }) => (
-  <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10 rounded-xl">
-    <div className="fin-panel border fin-divider rounded-lg p-5 w-80 shadow-xl">
-      <h3 className="text-white font-medium mb-2">保存更改？</h3>
-      <p className="text-slate-400 text-sm mb-4">您有未保存的更改，是否保存后关闭？</p>
-      <div className="flex gap-2 justify-end">
-        <button
-          onClick={onDiscard}
-          className="px-3 py-1.5 text-slate-400 hover:text-white text-sm transition-colors"
-        >
-          不保存
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 text-slate-400 hover:text-white text-sm transition-colors"
-        >
-          取消
-        </button>
-        <button
-          onClick={onSave}
-          className="px-4 py-1.5 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm"
-        >
-          保存
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
 // ========== Provider 设置选项卡 ==========
 const PROVIDERS = ['openai', 'gemini', 'vertexai'] as const;
+type ProviderType = typeof PROVIDERS[number];
+
+const PROVIDER_LABELS: Record<ProviderType, string> = {
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+  vertexai: 'Vertex AI',
+};
 
 interface ProviderSettingsProps {
   configs: AIConfig[];
-  selectedProvider: string;
-  onSelectProvider: (p: string) => void;
   onChange: (configs: AIConfig[]) => void;
 }
 
-const ProviderSettings: React.FC<ProviderSettingsProps> = ({ configs, selectedProvider, onSelectProvider, onChange }) => {
-  // 获取当前 provider 的配置，如果没有则自动创建
-  const getOrCreateConfig = (): AIConfig => {
-    const existing = configs.find(c => c.provider === selectedProvider);
-    if (existing) return existing;
+// 视图类型
+type ProviderView = 'list' | 'edit';
 
-    // 自动创建新配置
+const ProviderSettings: React.FC<ProviderSettingsProps> = ({ configs, onChange }) => {
+  const [view, setView] = useState<ProviderView>('list');
+  const [selectedConfig, setSelectedConfig] = useState<AIConfig | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newProviderType, setNewProviderType] = useState<ProviderType>('openai');
+
+  // 添加新配置
+  const handleAddConfig = () => {
     const newConfig: AIConfig = {
-      id: `${selectedProvider}-${Date.now()}`,
-      name: `${selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)}`,
-      provider: selectedProvider,
-      baseUrl: getDefaultBaseUrl(selectedProvider),
+      id: `${newProviderType}-${Date.now()}`,
+      name: `${PROVIDER_LABELS[newProviderType]} ${configs.filter(c => c.provider === newProviderType).length + 1}`,
+      provider: newProviderType,
+      baseUrl: getDefaultBaseUrl(newProviderType),
       apiKey: '',
-      modelName: getDefaultModel(selectedProvider),
+      modelName: getDefaultModel(newProviderType),
       maxTokens: 2048,
       temperature: 0.7,
       timeout: 60,
@@ -367,115 +351,408 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ configs, selectedPr
       location: 'us-central1',
       credentialsJson: '',
     };
-    // 添加到配置列表
     onChange([...configs, newConfig]);
-    return newConfig;
+    setSelectedConfig(newConfig);
+    setView('edit');
+    setShowAddModal(false);
   };
 
-  const currentConfig = configs.find(c => c.provider === selectedProvider) || getOrCreateConfig();
-
+  // 更新配置
   const handleUpdate = (updated: AIConfig) => {
-    // 如果设置为默认，取消其他配置的默认状态
     if (updated.isDefault) {
       onChange(configs.map(c => c.id === updated.id ? updated : { ...c, isDefault: false }));
     } else {
       onChange(configs.map(c => c.id === updated.id ? updated : c));
     }
+    setSelectedConfig(updated);
   };
+
+  // 删除配置
+  const handleDelete = (id: string) => {
+    const config = configs.find(c => c.id === id);
+    if (config?.isDefault) return;
+    onChange(configs.filter(c => c.id !== id));
+    setView('list');
+    setSelectedConfig(null);
+  };
+
+  // 设为默认
+  const handleSetDefault = (id: string) => {
+    onChange(configs.map(c => ({ ...c, isDefault: c.id === id })));
+  };
+
+  // 编辑视图
+  if (view === 'edit' && selectedConfig) {
+    return (
+      <ProviderEditView
+        config={selectedConfig}
+        onBack={() => { setView('list'); setSelectedConfig(null); }}
+        onChange={handleUpdate}
+        onDelete={() => handleDelete(selectedConfig.id)}
+      />
+    );
+  }
+
+  // 列表视图
+  return (
+    <ProviderListView
+      configs={configs}
+      onSelect={(config) => { setSelectedConfig(config); setView('edit'); }}
+      onSetDefault={handleSetDefault}
+      onDelete={handleDelete}
+      onAdd={() => setShowAddModal(true)}
+      showAddModal={showAddModal}
+      newProviderType={newProviderType}
+      onSelectType={setNewProviderType}
+      onConfirmAdd={handleAddConfig}
+      onCancelAdd={() => setShowAddModal(false)}
+    />
+  );
+};
+
+// ========== Provider 列表视图 ==========
+interface ProviderListViewProps {
+  configs: AIConfig[];
+  onSelect: (config: AIConfig) => void;
+  onSetDefault: (id: string) => void;
+  onDelete: (id: string) => void;
+  onAdd: () => void;
+  showAddModal: boolean;
+  newProviderType: ProviderType;
+  onSelectType: (type: ProviderType) => void;
+  onConfirmAdd: () => void;
+  onCancelAdd: () => void;
+}
+
+const ProviderListView: React.FC<ProviderListViewProps> = ({
+  configs, onSelect, onSetDefault, onDelete, onAdd,
+  showAddModal, newProviderType, onSelectType, onConfirmAdd, onCancelAdd
+}) => {
+  const defaultCount = configs.filter(c => c.isDefault).length;
 
   return (
     <div className="space-y-4">
-      {/* Provider 切换标签 */}
-      <div className="flex gap-1 p-1 fin-panel rounded-lg border fin-divider">
-        {PROVIDERS.map(p => (
-          <button
-            key={p}
-            onClick={() => onSelectProvider(p)}
-            className={`flex-1 px-3 py-2 text-sm rounded-md transition-all ${
-              selectedProvider === p
-                ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            {p.charAt(0).toUpperCase() + p.slice(1)}
-          </button>
-        ))}
+      {/* 头部 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-white font-medium">AI 模型配置</h3>
+          <p className="text-slate-500 text-xs mt-1">
+            共 {configs.length} 个配置，{defaultCount} 个默认
+          </p>
+        </div>
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          添加
+        </button>
       </div>
 
-      {/* 配置表单 - 直接显示 */}
-      <ProviderConfigForm config={currentConfig} onChange={handleUpdate} />
+      {/* 配置列表 */}
+      <div className="space-y-2">
+        {configs.length === 0 ? (
+          <p className="text-slate-500 text-sm text-center py-8">暂无 AI 配置</p>
+        ) : (
+          configs.map(config => (
+            <ProviderListItem
+              key={config.id}
+              config={config}
+              onSelect={() => onSelect(config)}
+              onSetDefault={() => onSetDefault(config.id)}
+              onDelete={() => onDelete(config.id)}
+            />
+          ))
+        )}
+      </div>
+
+      {/* 添加配置弹窗 */}
+      {showAddModal && (
+        <AddAIConfigModal
+          selectedType={newProviderType}
+          onSelectType={onSelectType}
+          onConfirm={onConfirmAdd}
+          onCancel={onCancelAdd}
+        />
+      )}
     </div>
   );
 };
 
-// ========== Provider 配置表单 ==========
-interface ProviderConfigFormProps {
-  config: AIConfig;
-  onChange: (config: AIConfig) => void;
+// ========== 添加 AI 配置弹窗 ==========
+interface AddAIConfigModalProps {
+  selectedType: ProviderType;
+  onSelectType: (type: ProviderType) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-const ProviderConfigForm: React.FC<ProviderConfigFormProps> = ({ config, onChange }) => {
+const AddAIConfigModal: React.FC<AddAIConfigModalProps> = ({ selectedType, onSelectType, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] backdrop-blur-sm">
+    <div className="fin-panel border fin-divider rounded-xl w-[360px] p-5 shadow-2xl">
+      <h3 className="text-lg font-semibold text-white mb-4">添加 AI 配置</h3>
+      <div className="space-y-3 mb-5">
+        <label className="block text-sm text-slate-400 mb-2">选择类型</label>
+        <div className="flex gap-2">
+          {PROVIDERS.map(p => (
+            <button
+              key={p}
+              onClick={() => onSelectType(p)}
+              className={`flex-1 px-3 py-2 text-sm rounded-lg transition-all ${
+                selectedType === p
+                  ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
+                  : 'fin-panel border fin-divider text-slate-400 hover:text-white'
+              }`}
+            >
+              {PROVIDER_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex justify-end gap-3">
+        <button onClick={onCancel} className="px-4 py-2 text-slate-400 hover:text-white text-sm">
+          取消
+        </button>
+        <button
+          onClick={onConfirm}
+          className="px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm"
+        >
+          添加
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ========== Provider 列表项 ==========
+interface ProviderListItemProps {
+  config: AIConfig;
+  onSelect: () => void;
+  onSetDefault: () => void;
+  onDelete: () => void;
+}
+
+const ProviderListItem: React.FC<ProviderListItemProps> = ({
+  config, onSelect, onSetDefault, onDelete
+}) => (
+  <div
+    onClick={onSelect}
+    className={`p-3 rounded-lg border transition-all cursor-pointer ${
+      config.isDefault ? 'border-accent/50 bg-accent/10' : 'border-slate-700 hover:border-slate-600'
+    }`}
+  >
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/20 text-blue-400">
+          <Cpu className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-white text-sm font-medium">{config.name}</span>
+            <span className="text-xs px-1.5 py-0.5 fin-chip text-slate-400 rounded">
+              {PROVIDER_LABELS[config.provider as ProviderType] || config.provider}
+            </span>
+            {config.isDefault && (
+              <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent-2 rounded">默认</span>
+            )}
+          </div>
+          <p className="text-slate-500 text-xs">{config.modelName}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+        {!config.isDefault && (
+          <>
+            <button
+              onClick={onSetDefault}
+              className="p-1.5 text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/20 rounded transition-colors"
+              title="设为默认"
+            >
+              <Star className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded transition-colors"
+              title="删除"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// ========== Provider 编辑视图 ==========
+interface ProviderEditViewProps {
+  config: AIConfig;
+  onBack: () => void;
+  onChange: (config: AIConfig) => void;
+  onDelete: () => void;
+}
+
+const ProviderEditView: React.FC<ProviderEditViewProps> = ({
+  config, onBack, onChange, onDelete
+}) => {
   const isVertexAI = config.provider === 'vertexai';
 
   return (
-    <div className="space-y-4 fin-panel rounded-lg p-4 border fin-divider">
-      {/* OpenAI/Gemini 通用字段 */}
-      {!isVertexAI && (
-        <>
-          <FormField label="Base URL" value={config.baseUrl} onChange={v => onChange({ ...config, baseUrl: v })} />
-          <FormField label="API Key" value={config.apiKey} onChange={v => onChange({ ...config, apiKey: v })} type="password" />
-        </>
-      )}
-
-      {/* OpenAI Responses API 开关 */}
-      {config.provider === 'openai' && (
-        <div className="flex items-center justify-between">
-          <label className="text-sm text-slate-400">使用 Responses API</label>
+    <div className="space-y-4">
+      {/* 头部 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <button
-            type="button"
-            onClick={() => onChange({ ...config, useResponses: !config.useResponses })}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              config.useResponses ? 'bg-[var(--accent)]' : 'bg-slate-600'
-            }`}
+            onClick={onBack}
+            className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
           >
-            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
-              config.useResponses ? 'translate-x-[18px]' : 'translate-x-[3px]'
-            }`} />
+            <ChevronLeft className="h-5 w-5" />
           </button>
-        </div>
-      )}
-
-      {/* Vertex AI 专用字段 */}
-      {isVertexAI && (
-        <>
-          <FormField label="GCP 项目 ID" value={config.project || ''} onChange={v => onChange({ ...config, project: v })} />
-          <FormField label="区域" value={config.location || ''} onChange={v => onChange({ ...config, location: v })} />
-          <div>
-            <label className="block text-sm text-slate-400 mb-1.5">服务账号证书 (JSON)</label>
-            <textarea
-              value={config.credentialsJson || ''}
-              onChange={e => onChange({ ...config, credentialsJson: e.target.value })}
-              rows={6}
-              placeholder="粘贴服务账号 JSON 证书内容，留空则使用 ADC 默认凭据"
-              className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm resize-none font-mono"
-            />
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/20 text-blue-400">
+            <Cpu className="h-5 w-5" />
           </div>
-        </>
-      )}
+          <div>
+            <h3 className="text-white font-medium">{config.name}</h3>
+            <p className="text-xs text-slate-500">
+              {PROVIDER_LABELS[config.provider as ProviderType] || config.provider}
+              {config.isDefault && ' · 默认配置'}
+            </p>
+          </div>
+        </div>
+        {!config.isDefault && (
+          <button
+            onClick={onDelete}
+            className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
-      {/* 通用字段 */}
-      <FormField label="模型名称" value={config.modelName} onChange={v => onChange({ ...config, modelName: v })} />
-      <div className="flex items-center pt-2">
-        <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
-          <input
-            type="radio"
-            name="defaultProvider"
-            checked={config.isDefault}
-            onChange={() => onChange({ ...config, isDefault: true })}
-            className="w-4 h-4 bg-slate-700 border-slate-600 text-[var(--accent)]"
-          />
-          设为默认
-        </label>
+      {/* 表单内容 */}
+      <div className="space-y-4">
+        <FormField label="配置名称" value={config.name} onChange={v => onChange({ ...config, name: v })} />
+
+        {!isVertexAI && (
+          <>
+            <FormField label="Base URL" value={config.baseUrl} onChange={v => onChange({ ...config, baseUrl: v })} />
+            <FormField label="API Key" value={config.apiKey} onChange={v => onChange({ ...config, apiKey: v })} type="password" />
+          </>
+        )}
+
+        {config.provider === 'openai' && (
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-slate-400">使用 Responses API</label>
+            <ToggleSwitch checked={config.useResponses} onChange={v => onChange({ ...config, useResponses: v })} />
+          </div>
+        )}
+
+        {isVertexAI && (
+          <>
+            <FormField label="GCP 项目 ID" value={config.project || ''} onChange={v => onChange({ ...config, project: v })} />
+            <FormField label="区域" value={config.location || ''} onChange={v => onChange({ ...config, location: v })} />
+            <div>
+              <label className="block text-sm text-slate-400 mb-1.5">服务账号证书 (JSON)</label>
+              <textarea
+                value={config.credentialsJson || ''}
+                onChange={e => onChange({ ...config, credentialsJson: e.target.value })}
+                rows={4}
+                placeholder="粘贴服务账号 JSON 证书内容"
+                className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm resize-none font-mono"
+              />
+            </div>
+          </>
+        )}
+
+        <FormField label="模型名称" value={config.modelName} onChange={v => onChange({ ...config, modelName: v })} />
+      </div>
+    </div>
+  );
+};
+
+// ========== 开关组件 ==========
+const ToggleSwitch: React.FC<{ checked: boolean; onChange: (v: boolean) => void }> = ({ checked, onChange }) => (
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+      checked ? 'bg-[var(--accent)]' : 'bg-slate-600'
+    }`}
+  >
+    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+      checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
+    }`} />
+  </button>
+);
+
+// ========== 意图配置设置 ==========
+interface IntentSettingsProps {
+  configs: AIConfig[];
+  moderatorAiId: string;
+  onModeratorAiIdChange: (id: string) => void;
+}
+
+const IntentSettings: React.FC<IntentSettingsProps> = ({ configs, moderatorAiId, onModeratorAiIdChange }) => {
+  const selectedConfig = configs.find(c => c.id === moderatorAiId);
+  const defaultConfig = configs.find(c => c.isDefault);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-white font-medium">意图分析配置</h3>
+        <p className="text-slate-400 text-sm mt-1">
+          配置"小韭菜"使用的 AI 模型，用于分析用户意图和选择专家
+        </p>
+      </div>
+
+      {/* 当前配置 */}
+      <div className="fin-panel rounded-lg p-4 border fin-divider">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/20 text-purple-400">
+            <MessageSquare className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-white font-medium">小韭菜</div>
+            <div className="text-slate-500 text-xs">会议主持 · 意图分析</div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm text-slate-400 mb-2">使用的 AI 模型</label>
+          <select
+            value={moderatorAiId}
+            onChange={e => onModeratorAiIdChange(e.target.value)}
+            className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+          >
+            <option value="">使用默认配置 {defaultConfig ? `(${defaultConfig.name})` : ''}</option>
+            {configs.map(config => (
+              <option key={config.id} value={config.id}>
+                {config.name} - {config.modelName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 当前选择的配置信息 */}
+        {(selectedConfig || defaultConfig) && (
+          <div className="mt-4 pt-4 border-t fin-divider">
+            <div className="text-xs text-slate-500 mb-2">当前配置详情</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-slate-400">模型</div>
+              <div className="text-white">{(selectedConfig || defaultConfig)?.modelName}</div>
+              <div className="text-slate-400">提供商</div>
+              <div className="text-white">
+                {PROVIDER_LABELS[(selectedConfig || defaultConfig)?.provider as ProviderType]}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 说明 */}
+      <div className="text-xs text-slate-500 space-y-1">
+        <p>• 小韭菜负责分析用户问题的意图，并选择合适的专家进行回答</p>
+        <p>• 建议使用响应较快的模型以减少等待时间</p>
+        <p>• 留空则使用系统默认的 AI 配置</p>
       </div>
     </div>
   );
@@ -501,27 +778,6 @@ const FormField: React.FC<FormFieldProps> = ({ label, value, onChange, type = 't
   </div>
 );
 
-interface FooterProps {
-  saving: boolean;
-  onSave: () => void;
-  onClose: () => void;
-}
-
-const Footer: React.FC<FooterProps> = ({ saving, onSave, onClose }) => (
-  <div className="flex justify-end gap-3 px-5 py-4 border-t fin-divider fin-panel-strong">
-    <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-colors">
-      取消
-    </button>
-    <button
-      onClick={onSave}
-      disabled={saving}
-      className="px-5 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg  text-sm disabled:opacity-50 transition-colors"
-    >
-      {saving ? '保存中...' : '保存'}
-    </button>
-  </div>
-);
-
 // ========== Helper functions ==========
 const getDefaultBaseUrl = (provider: string): string => {
   switch (provider) {
@@ -537,39 +793,6 @@ const getDefaultModel = (provider: string): string => {
     case 'gemini': return 'gemini-pro';
     case 'vertexai': return 'gemini-1.5-pro';
     default: return '';
-  }
-};
-
-const handleSave = async (
-  configs: AIConfig[],
-  agents: AgentConfig[],
-  mcpServers: MCPServerConfig[],
-  memoryConfig: MemoryConfig,
-  proxyConfig: ProxyConfig,
-  fullConfig: { theme: string } | null,
-  setSaving: React.Dispatch<React.SetStateAction<boolean>>,
-  onClose: () => void
-) => {
-  setSaving(true);
-  try {
-    // 保存完整的 AI 配置、MCP 配置、记忆配置和代理配置
-    await updateConfig({
-      theme: fullConfig?.theme || 'military',
-      aiConfigs: configs,
-      defaultAiId: configs.find(c => c.isDefault)?.id || '',
-      mcpServers: mcpServers,
-      memory: memoryConfig,
-      proxy: proxyConfig,
-    } as any);
-
-    // 保存所有 Agent 配置（会触发后端重载）
-    for (const agent of agents) {
-      await updateAgentConfig(agent);
-    }
-
-    onClose();
-  } finally {
-    setSaving(false);
   }
 };
 
@@ -1184,13 +1407,15 @@ interface StrategySettingsProps {
   onActiveChange: (id: string) => void;
   onAgentsReload: () => void;
   mcpServers: MCPServerConfig[];
+  aiConfigs: AIConfig[];
+  showToast: (type: 'success' | 'error' | 'loading', message: string) => void;
 }
 
 // 视图类型
 type StrategyView = 'list' | 'agents' | 'agent-edit';
 
 const StrategySettings: React.FC<StrategySettingsProps> = ({
-  strategies, activeStrategyId, onStrategiesChange, onActiveChange, onAgentsReload, mcpServers
+  strategies, activeStrategyId, onStrategiesChange, onActiveChange, onAgentsReload, mcpServers, aiConfigs, showToast
 }) => {
   const [view, setView] = useState<StrategyView>('list');
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
@@ -1247,11 +1472,15 @@ const StrategySettings: React.FC<StrategySettingsProps> = ({
     onStrategiesChange(newStrategies);
 
     // 保存到后端
-    await updateStrategy(updatedStrategy);
-
-    // 如果是当前激活策略，重新加载 agents
-    if (selectedStrategy.id === activeStrategyId) {
-      onAgentsReload();
+    try {
+      await updateStrategy(updatedStrategy);
+      showToast('success', '已保存');
+      // 如果是当前激活策略，重新加载 agents
+      if (selectedStrategy.id === activeStrategyId) {
+        onAgentsReload();
+      }
+    } catch (e) {
+      showToast('error', '保存失败');
     }
   };
 
@@ -1297,6 +1526,7 @@ const StrategySettings: React.FC<StrategySettingsProps> = ({
         strategy={selectedStrategy}
         availableTools={availableTools}
         mcpServers={mcpServers}
+        aiConfigs={aiConfigs}
         onBack={handleBackToAgents}
         onChange={handleUpdateAgent}
       />
@@ -1564,6 +1794,7 @@ interface StrategyAgentEditProps {
   strategy: Strategy;
   availableTools: ToolInfo[];
   mcpServers: MCPServerConfig[];
+  aiConfigs: AIConfig[];
   onBack: () => void;
   onChange: (agent: StrategyAgent) => void;
 }
@@ -1571,7 +1802,7 @@ interface StrategyAgentEditProps {
 type AgentEditTab = 'basic' | 'tools';
 
 const StrategyAgentEdit: React.FC<StrategyAgentEditProps> = ({
-  agent, strategy, availableTools, mcpServers, onBack, onChange
+  agent, strategy, availableTools, mcpServers, aiConfigs, onBack, onChange
 }) => {
   const [editedAgent, setEditedAgent] = useState<StrategyAgent>(agent);
   const [activeTab, setActiveTab] = useState<AgentEditTab>('basic');
@@ -1627,6 +1858,7 @@ const StrategyAgentEdit: React.FC<StrategyAgentEditProps> = ({
       {activeTab === 'basic' && (
         <AgentBasicConfig
           agent={editedAgent}
+          aiConfigs={aiConfigs}
           onChange={handleChange}
         />
       )}
@@ -1736,11 +1968,32 @@ const AgentEditTabs: React.FC<AgentEditTabsProps> = ({
 // 专家基础配置
 interface AgentBasicConfigProps {
   agent: StrategyAgent;
+  aiConfigs: AIConfig[];
   onChange: <K extends keyof StrategyAgent>(field: K, value: StrategyAgent[K]) => void;
 }
 
-const AgentBasicConfig: React.FC<AgentBasicConfigProps> = ({ agent, onChange }) => (
+const AgentBasicConfig: React.FC<AgentBasicConfigProps> = ({ agent, aiConfigs, onChange }) => (
   <div className="space-y-4">
+    {/* AI 配置选择 */}
+    <div>
+      <label className="block text-sm text-slate-400 mb-1.5">AI 模型</label>
+      <select
+        value={agent.aiConfigId || ''}
+        onChange={e => onChange('aiConfigId', e.target.value)}
+        className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+      >
+        <option value="">使用默认配置</option>
+        {aiConfigs.map(config => (
+          <option key={config.id} value={config.id}>
+            {config.name} ({config.modelName})
+            {config.isDefault ? ' [默认]' : ''}
+          </option>
+        ))}
+      </select>
+      <p className="text-xs text-slate-500 mt-1">为该专家指定专用的 AI 模型，留空则使用系统默认配置</p>
+    </div>
+
+    {/* 系统指令 */}
     <div>
       <label className="block text-sm text-slate-400 mb-1.5">系统指令 (Prompt)</label>
       <textarea

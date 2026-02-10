@@ -116,6 +116,17 @@ func NewApp() *App {
 		log.Info("Memory manager enabled")
 	}
 
+	// 设置 Moderator AI 配置
+	if configService.GetConfig().ModeratorAIID != "" {
+		for i := range configService.GetConfig().AIConfigs {
+			if configService.GetConfig().AIConfigs[i].ID == configService.GetConfig().ModeratorAIID {
+				meetingService.SetModeratorAIConfig(&configService.GetConfig().AIConfigs[i])
+				log.Info("Moderator LLM: %s", configService.GetConfig().AIConfigs[i].ModelName)
+				break
+			}
+		}
+	}
+
 	// 初始化Session服务
 	sessionService := services.NewSessionService(dataDir)
 
@@ -267,6 +278,11 @@ func (a *App) startup(ctx context.Context) {
 	// 初始化代理配置
 	proxy.GetManager().SetConfig(&a.configService.GetConfig().Proxy)
 
+	// 设置 Meeting 服务的 AI 配置解析器
+	if a.meetingService != nil {
+		a.meetingService.SetAIConfigResolver(a.getAIConfigByID)
+	}
+
 	// 初始化更新服务
 	if a.updateService != nil {
 		a.updateService.Startup(ctx)
@@ -315,6 +331,15 @@ func (a *App) UpdateConfig(config *models.AppConfig) string {
 		for i := range config.AIConfigs {
 			if config.AIConfigs[i].ID == config.Memory.AIConfigID {
 				a.meetingService.SetMemoryAIConfig(&config.AIConfigs[i])
+				break
+			}
+		}
+	}
+	// 更新 Moderator AI 配置
+	if a.meetingService != nil && config.ModeratorAIID != "" {
+		for i := range config.AIConfigs {
+			if config.AIConfigs[i].ID == config.ModeratorAIID {
+				a.meetingService.SetModeratorAIConfig(&config.AIConfigs[i])
 				break
 			}
 		}
@@ -392,6 +417,21 @@ func (a *App) getDefaultAIConfig(config *models.AppConfig) *models.AIConfig {
 		return &config.AIConfigs[0]
 	}
 	return nil
+}
+
+// getAIConfigByID 根据ID获取AI配置，找不到则返回默认配置
+func (a *App) getAIConfigByID(aiConfigID string) *models.AIConfig {
+	config := a.configService.GetConfig()
+	// 如果指定了ID，尝试查找
+	if aiConfigID != "" {
+		for i := range config.AIConfigs {
+			if config.AIConfigs[i].ID == aiConfigID {
+				return &config.AIConfigs[i]
+			}
+		}
+	}
+	// 找不到则返回默认配置
+	return a.getDefaultAIConfig(config)
 }
 
 // ========== Session API ==========
