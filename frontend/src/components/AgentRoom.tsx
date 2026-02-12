@@ -8,6 +8,7 @@ import { NodeRenderer } from 'markstream-react';
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
 import { useMentionPicker } from '../hooks/useMentionPicker';
 import { useToast } from '../hooks/useToast';
+import { useTheme } from '../contexts/ThemeContext';
 import { CancelMeeting } from '../../wailsjs/go/main/App';
 import 'markstream-react/index.css';
 
@@ -36,6 +37,7 @@ interface AgentRoomProps {
 }
 
 export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }) => {
+  const { colors } = useTheme();
   const [allAgents, setAllAgents] = useState<AgentConfig[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [simulatingMap, setSimulatingMap] = useState<Record<string, boolean>>({});
@@ -395,29 +397,29 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
       {/* Header */}
       <div className="p-4 border-b fin-divider fin-panel-strong">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className={`text-lg font-bold flex items-center gap-2 ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>
             <Users style={{ color: 'var(--accent)' }} />
             韭菜讨论中心
           </h2>
           <button
             onClick={handleClearMessages}
             disabled={isSimulating || messages.length === 0}
-            className="text-slate-400 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed p-1.5 rounded hover:bg-slate-800 transition-colors"
+            className={`p-1.5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${colors.isDark ? 'text-slate-400 hover:text-red-400 hover:bg-slate-800' : 'text-slate-500 hover:text-red-500 hover:bg-slate-200'}`}
             title="清空聊天记录"
           >
             <Trash2 size={16} />
           </button>
         </div>
-        <p className="text-xs text-slate-400 mt-1">@韭菜提问，引用观点深入讨论</p>
+        <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>@韭菜提问，引用观点深入讨论</p>
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 fin-panel-soft fin-scrollbar" ref={scrollRef}>
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500 text-sm p-8 text-center opacity-60">
+          <div className={`h-full flex flex-col items-center justify-center text-sm p-8 text-center opacity-60 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             <MessageSquare size={32} className="mb-2" />
             <p>直接提问或 @ 选择韭菜专家</p>
-            <p className="text-xs mt-1 text-slate-600">不@任何人时，小韭菜会自动安排韭菜专家讨论</p>
+            <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-600' : 'text-slate-400'}`}>不@任何人时，小韭菜会自动安排韭菜专家讨论</p>
           </div>
         )}
         
@@ -429,7 +431,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
           if (isSystem) {
             return (
                <div key={msg.id} className="flex justify-center my-2">
-                 <span className="text-xs fin-chip text-slate-400 px-3 py-1 rounded-full border fin-divider">
+                 <span className={`text-xs fin-chip px-3 py-1 rounded-full border fin-divider ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                    {msg.content}
                  </span>
                </div>
@@ -451,15 +453,15 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                     <div className="flex items-baseline gap-2 mb-1 justify-end">
                       <span className="text-xs font-bold text-accent-2">{displayName}</span>
                       {mentionNames.length > 0 && (
-                        <span className="text-[10px] text-slate-400">
+                        <span className={`text-[10px] ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                           @{mentionNames.join(', ')}
                         </span>
                       )}
                     </div>
                     {/* 引用内容 */}
                     {quotedMsg && (
-                      <div className="inline-block text-left text-xs text-slate-400 bg-slate-800/50 px-2 py-1 rounded mb-1 border-l-2 border-slate-500 max-w-full">
-                        <span className="text-slate-500">引用 {quotedMsg.agentName}：</span>
+                      <div className={`inline-block text-left text-xs px-2 py-1 rounded mb-1 border-l-2 max-w-full ${colors.isDark ? 'text-slate-400 bg-slate-800/50 border-slate-500' : 'text-slate-500 bg-slate-200/50 border-slate-400'}`}>
+                        <span className={colors.isDark ? 'text-slate-500' : 'text-slate-400'}>引用 {quotedMsg.agentName}：</span>
                         <span className="line-clamp-1">{quotedMsg.content}</span>
                       </div>
                     )}
@@ -471,14 +473,14 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                       <div className="flex items-center gap-2 mt-2 justify-end">
                         <button
                           onClick={() => handleRetry(msg)}
-                          className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded transition-colors"
+                          className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${colors.isDark ? 'text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20' : 'text-amber-600 hover:text-amber-500 bg-amber-500/10 hover:bg-amber-500/20'}`}
                         >
                           <RotateCcw size={12} />
                           重试
                         </button>
                         <button
                           onClick={() => handleEdit(msg)}
-                          className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-300 bg-slate-500/10 hover:bg-slate-500/20 px-2 py-1 rounded transition-colors"
+                          className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${colors.isDark ? 'text-slate-400 hover:text-slate-300 bg-slate-500/10 hover:bg-slate-500/20' : 'text-slate-500 hover:text-slate-400 bg-slate-500/10 hover:bg-slate-500/20'}`}
                         >
                           <Pencil size={12} />
                           编辑
@@ -486,7 +488,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                       </div>
                     )}
                  </div>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-slate-900/60 text-accent-2 border border-accent/30">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 text-accent-2 border border-accent/30 ${colors.isDark ? 'bg-slate-900/60' : 'bg-slate-100'}`}>
                     <User size={16}/>
                   </div>
                </div>
@@ -506,22 +508,22 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                 <div className="flex-1 max-w-[90%]">
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-xs font-bold text-amber-400">{msg.agentName}</span>
-                    <span className="text-[9px] text-amber-500/70 border border-amber-500/30 px-1 rounded">
+                    <span className={`text-[9px] border border-amber-500/30 px-1 rounded ${colors.isDark ? 'text-amber-500/70' : 'text-amber-600/70'}`}>
                       {isOpening ? '开场' : isSummary ? '总结' : msg.role}
                     </span>
                   </div>
                   <div className="relative">
                     <div className={`text-sm p-3 rounded-2xl rounded-tl-none leading-relaxed shadow-sm ${
                       isSummary
-                        ? 'bg-gradient-to-br from-amber-900/40 to-orange-900/30 border border-amber-500/30 text-amber-100'
-                        : 'bg-slate-800/70 border border-amber-500/20 text-slate-200'
+                        ? (colors.isDark ? 'bg-gradient-to-br from-amber-900/40 to-orange-900/30 border border-amber-500/30 text-amber-100' : 'bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-400/30 text-amber-900')
+                        : (colors.isDark ? 'bg-slate-800/70 border border-amber-500/20 text-slate-200' : 'bg-slate-100 border border-amber-400/20 text-slate-700')
                     }`}>
                       <NodeRenderer content={msg.content} />
                     </div>
                     {/* 复制按钮 */}
                     <button
                       onClick={() => handleCopy(msg.id, msg.content)}
-                      className="absolute -right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-700 hover:bg-slate-600 text-slate-300 p-1.5 rounded-full shadow-lg"
+                      className={`absolute -right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full shadow-lg ${colors.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' : 'bg-white hover:bg-slate-100 text-slate-500 border border-slate-200'}`}
                       title="复制"
                     >
                       {copiedId === msg.id ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
@@ -542,18 +544,18 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
               </div>
               <div className="flex-1 max-w-[85%]">
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-xs font-bold text-slate-300">{msg.agentName || agent?.name}</span>
-                  <span className="text-[9px] text-slate-500 uppercase border fin-divider px-1 rounded fin-chip">{msg.role || agent?.role}</span>
+                  <span className={`text-xs font-bold ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>{msg.agentName || agent?.name}</span>
+                  <span className={`text-[9px] uppercase border fin-divider px-1 rounded fin-chip ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>{msg.role || agent?.role}</span>
                 </div>
                 <div className="relative">
-                  <div className="text-sm text-slate-200 bg-slate-800/70 p-3 rounded-2xl rounded-tl-none border border-slate-700/40 leading-relaxed shadow-sm agent-message-content">
+                  <div className={`text-sm p-3 rounded-2xl rounded-tl-none leading-relaxed shadow-sm agent-message-content ${colors.isDark ? 'text-slate-200 bg-slate-800/70 border border-slate-700/40' : 'text-slate-700 bg-white border border-slate-200'}`}>
                     <NodeRenderer content={msg.content} />
                   </div>
                   {/* 操作按钮组 */}
                   <div className="absolute -right-2 top-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleCopy(msg.id, msg.content)}
-                      className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1.5 rounded-full shadow-lg"
+                      className={`p-1.5 rounded-full shadow-lg ${colors.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' : 'bg-white hover:bg-slate-100 text-slate-500 border border-slate-200'}`}
                       title="复制"
                     >
                       {copiedId === msg.id ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
@@ -561,7 +563,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                     <button
                       onClick={() => handleReplyTo(msg)}
                       disabled={isSimulating}
-                      className="bg-slate-700 hover:bg-slate-600 text-slate-300 p-1.5 rounded-full shadow-lg disabled:opacity-50"
+                      className={`p-1.5 rounded-full shadow-lg disabled:opacity-50 ${colors.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' : 'bg-white hover:bg-slate-100 text-slate-500 border border-slate-200'}`}
                       title="引用回复"
                     >
                       <Reply size={12} />
@@ -574,13 +576,13 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
         })}
         {/* 进度显示 */}
         {isSimulating && (
-          <div className="mx-4 p-3 fin-panel-soft rounded-xl border border-slate-700/50 animate-in fade-in duration-300">
+          <div className={`mx-4 p-3 fin-panel-soft rounded-xl border animate-in fade-in duration-300 ${colors.isDark ? 'border-slate-700/50' : 'border-slate-300/50'}`}>
             {progress.currentAgent ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Loader2 className="animate-spin h-4 w-4 text-accent-2" />
                   <span className="text-sm text-accent-2 font-medium">{progress.currentAgentName}</span>
-                  <span className="text-xs text-slate-500">正在分析...</span>
+                  <span className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>正在分析...</span>
                 </div>
                 {progress.steps.length > 0 && (
                   <div className="pl-6 space-y-1">
@@ -591,7 +593,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                         ) : (
                           <Wrench className="h-3 w-3 text-amber-400 animate-pulse" />
                         )}
-                        <span className={step.done ? 'text-slate-400' : 'text-amber-400'}>
+                        <span className={step.done ? (colors.isDark ? 'text-slate-400' : 'text-slate-500') : 'text-amber-400'}>
                           {step.detail}
                         </span>
                       </div>
@@ -602,7 +604,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
             ) : (
               <div className="flex items-center gap-2 justify-center">
                 <Loader2 className="animate-spin h-3 w-3 text-accent-2" />
-                <span className="text-xs text-slate-500 animate-pulse">会议进行中...</span>
+                <span className={`text-xs animate-pulse ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>会议进行中...</span>
               </div>
             )}
           </div>
@@ -613,13 +615,13 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
       <div className="p-3 border-t fin-divider fin-panel-strong shrink-0">
         {/* 引用预览 */}
         {replyToMessage && (
-          <div className="flex items-center gap-2 mb-2 p-2 bg-slate-800/50 rounded-lg border-l-2 border-accent">
+          <div className={`flex items-center gap-2 mb-2 p-2 rounded-lg border-l-2 border-accent ${colors.isDark ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
             <Reply size={12} className="text-accent-2 shrink-0" />
             <div className="flex-1 min-w-0">
               <span className="text-[10px] text-accent-2">引用 {replyToMessage.agentName}</span>
-              <p className="text-xs text-slate-400 truncate">{replyToMessage.content}</p>
+              <p className={`text-xs truncate ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>{replyToMessage.content}</p>
             </div>
-            <button onClick={clearReplyTo} className="text-slate-500 hover:text-slate-300 p-1">
+            <button onClick={clearReplyTo} className={`p-1 ${colors.isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}>
               <X size={14} />
             </button>
           </div>
@@ -628,7 +630,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
         {/* 已@韭菜标签 */}
         {mentionedAgents.length > 0 && (
           <div className="flex items-center gap-1 mb-2 flex-wrap">
-            <span className="text-[10px] text-slate-500">已@:</span>
+            <span className={`text-[10px] ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>已@:</span>
             {mentionedAgents.map(id => {
               const agent = allAgents.find(a => a.id === id);
               return agent ? (
@@ -650,14 +652,14 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
         <div className="relative">
           {/* @选择器下拉（输入@时显示） */}
           {showMentionPicker && filteredAgents.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/50 shadow-2xl z-10 overflow-hidden">
+            <div className={`absolute bottom-full left-0 right-0 mb-2 backdrop-blur-sm rounded-xl border shadow-2xl z-10 overflow-hidden ${colors.isDark ? 'bg-slate-900/95 border-slate-700/50' : 'bg-white/95 border-slate-300/50'}`}>
               {/* 标题栏 */}
-              <div className="px-3 py-2 border-b border-slate-700/50 bg-slate-800/50">
+              <div className={`px-3 py-2 border-b ${colors.isDark ? 'border-slate-700/50 bg-slate-800/50' : 'border-slate-200 bg-slate-100/50'}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">
+                  <span className={`text-xs ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {mentionSearchText ? `搜索: "${mentionSearchText}"` : '选择韭菜'}
                   </span>
-                  <span className="text-[10px] text-slate-500">↑↓ 选择 · Enter 确认</span>
+                  <span className={`text-[10px] ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>↑↓ 选择 · Enter 确认</span>
                 </div>
               </div>
               {/* 韭菜列表 */}
@@ -669,7 +671,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
                       index === mentionSelectedIndex
                         ? 'bg-accent/20 text-white'
-                        : 'text-slate-300 hover:bg-slate-800'
+                        : (colors.isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100')
                     }`}
                   >
                     <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${agent.color} shadow-md`}>
@@ -677,7 +679,7 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{agent.name}</div>
-                      <div className="text-[10px] text-slate-500 truncate">{agent.role}</div>
+                      <div className={`text-[10px] truncate ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>{agent.role}</div>
                     </div>
                     {index === mentionSelectedIndex && (
                       <span className="text-accent-2 text-xs">⏎</span>
@@ -722,25 +724,25 @@ export const AgentRoom: React.FC<AgentRoomProps> = ({ session, onSessionUpdate }
           </form>
         </div>
         <div className="mt-1 text-center">
-          <span className="text-[10px] text-slate-600">直接提问由小韭菜安排韭菜专家，@ 可指定韭菜专家</span>
+          <span className={`text-[10px] ${colors.isDark ? 'text-slate-600' : 'text-slate-400'}`}>直接提问由小韭菜安排韭菜专家，@ 可指定韭菜专家</span>
         </div>
       </div>
 
       {/* 清空确认弹窗 */}
       {showClearConfirm && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm rounded-lg">
-          <div className="fin-panel border fin-divider rounded-xl p-5 w-72 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className={`fin-panel border fin-divider rounded-xl p-5 w-72 shadow-2xl animate-in fade-in zoom-in-95 duration-200`}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
                 <Trash2 className="h-5 w-5 text-red-400" />
               </div>
-              <h3 className="text-white font-medium">清空聊天记录</h3>
+              <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>清空聊天记录</h3>
             </div>
-            <p className="text-slate-400 text-sm mb-5">确定要清空所有聊天记录吗？此操作无法撤销。</p>
+            <p className={`text-sm mb-5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>确定要清空所有聊天记录吗？此操作无法撤销。</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="px-4 py-2 text-slate-400 hover:text-white text-sm transition-colors rounded-lg hover:bg-slate-700/60"
+                className={`px-4 py-2 text-sm transition-colors rounded-lg ${colors.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700/60' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/60'}`}
               >
                 取消
               </button>

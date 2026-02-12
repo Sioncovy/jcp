@@ -9,6 +9,7 @@ import { HotTrendDialog } from './components/HotTrendDialog';
 import { LongHuBangDialog } from './components/LongHuBangDialog';
 import { WelcomePage } from './components/WelcomePage';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
+import { useTheme } from './contexts/ThemeContext';
 import { ResizeHandle } from './components/ResizeHandle';
 import { getWatchlist, addToWatchlist, removeFromWatchlist } from './services/watchlistService';
 import { getKLineData, getOrderBook } from './services/stockService';
@@ -39,6 +40,7 @@ const LAYOUT_MAX = {
 };
 
 const App: React.FC = () => {
+  const { colors } = useTheme();
   const [watchlist, setWatchlist] = useState<Stock[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<string>('');
   const [currentSession, setCurrentSession] = useState<StockSession | null>(null);
@@ -348,17 +350,17 @@ const App: React.FC = () => {
       <header className="h-14 fin-panel border-b fin-divider flex items-center px-4 justify-between shrink-0 z-20" style={{ '--wails-draggable': 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-2" style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}>
           <img src={logo} alt="logo" className="h-8 w-8 rounded-lg" />
-          <span className="font-bold text-lg tracking-tight">韭菜盘 <span className="text-accent-2">AI</span></span>
+          <span className={`font-bold text-lg tracking-tight ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>韭菜盘 <span className="text-accent-2">AI</span></span>
         </div>
         
         <div className="flex items-center gap-4 fin-panel-soft px-4 py-1.5 rounded-full border fin-divider relative" style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}>
           <Radio className="h-3 w-3 animate-pulse text-accent-2" />
-          <span className="text-xs font-mono text-slate-300 w-96 truncate text-center">
+          <span className={`text-xs font-mono w-96 truncate text-center ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
             实时快讯: {marketMessage}
           </span>
           <button
             onClick={handleShowTelegraphList}
-            className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-accent-2 transition-colors"
+            className={`p-1 rounded transition-colors ${colors.isDark ? 'hover:bg-slate-700/50 text-slate-400' : 'hover:bg-slate-200/50 text-slate-500'} hover:text-accent-2`}
             title="查看快讯列表"
           >
             <List className="h-4 w-4" />
@@ -370,23 +372,23 @@ const App: React.FC = () => {
               className="absolute top-full left-0 right-0 mt-2 fin-panel border fin-divider rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto fin-scrollbar"
               onMouseLeave={() => setShowTelegraphList(false)}
             >
-              <div className="p-2 border-b fin-divider text-xs text-slate-400 font-medium">
+              <div className={`p-2 border-b fin-divider text-xs font-medium ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 财联社快讯
               </div>
               {telegraphLoading ? (
-                <div className="p-4 text-center text-slate-500 text-sm">加载中...</div>
+                <div className={`p-4 text-center text-sm ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>加载中...</div>
               ) : telegraphList.length === 0 ? (
-                <div className="p-4 text-center text-slate-500 text-sm">暂无快讯</div>
+                <div className={`p-4 text-center text-sm ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>暂无快讯</div>
               ) : (
                 telegraphList.map((tg, idx) => (
                   <div
                     key={idx}
                     onClick={() => handleOpenTelegraph(tg)}
-                    className="p-3 border-b fin-divider last:border-b-0 hover:bg-slate-800/50 cursor-pointer transition-colors"
+                    className={`p-3 border-b fin-divider last:border-b-0 cursor-pointer transition-colors ${colors.isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-100/80'}`}
                   >
                     <div className="flex items-start gap-2">
                       <span className="text-xs text-accent-2 font-mono shrink-0">{tg.time}</span>
-                      <span className="text-xs text-slate-300 line-clamp-2">{tg.content}</span>
+                      <span className={`text-xs line-clamp-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>{tg.content}</span>
                     </div>
                   </div>
                 ))
@@ -398,14 +400,14 @@ const App: React.FC = () => {
         <div className="flex items-center gap-3" style={{ '--wails-draggable': 'no-drag' } as React.CSSProperties}>
           <button
             onClick={() => setShowLongHuBang(true)}
-            className="p-2 rounded-lg fin-panel border fin-divider text-slate-300 hover:text-white hover:border-red-400/40 transition-colors"
+            className={`p-2 rounded-lg fin-panel border fin-divider transition-colors ${colors.isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} hover:border-red-400/40`}
             title="龙虎榜"
           >
             <BarChart3 className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowHotTrend(true)}
-            className="p-2 rounded-lg fin-panel border fin-divider text-slate-300 hover:text-white hover:border-orange-400/40 transition-colors"
+            className={`p-2 rounded-lg fin-panel border fin-divider transition-colors ${colors.isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} hover:border-orange-400/40`}
             title="全网热点"
           >
             <TrendingUp className="h-4 w-4" />
@@ -413,17 +415,17 @@ const App: React.FC = () => {
           <ThemeSwitcher />
           <button
             onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg fin-panel border fin-divider text-slate-300 hover:text-white hover:border-accent/40 transition-colors"
+            className={`p-2 rounded-lg fin-panel border fin-divider transition-colors ${colors.isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} hover:border-accent/40`}
           >
             <Settings className="h-4 w-4" />
           </button>
           <div className="text-xs text-right hidden md:block">
-            <div className="text-slate-400">市场状态</div>
+            <div className={colors.isDark ? 'text-slate-400' : 'text-slate-500'}>市场状态</div>
             <div className={`font-bold ${
               marketStatus?.status === 'trading' ? 'text-green-500' :
               marketStatus?.status === 'pre_market' ? 'text-yellow-500' :
               marketStatus?.status === 'lunch_break' ? 'text-orange-500' :
-              'text-slate-500'
+              colors.isDark ? 'text-slate-500' : 'text-slate-400'
             }`}>
               {marketStatus?.statusText || '加载中...'}
             </div>
@@ -432,21 +434,21 @@ const App: React.FC = () => {
           <div className="flex items-center ml-2 border-l fin-divider pl-3">
             <button
               onClick={() => WindowMinimize()}
-              className="p-1.5 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors"
+              className={`p-1.5 rounded transition-colors ${colors.isDark ? 'hover:bg-slate-700/50 text-slate-400 hover:text-white' : 'hover:bg-slate-200/50 text-slate-500 hover:text-slate-900'}`}
               title="最小化"
             >
               <Minus className="h-4 w-4" />
             </button>
             <button
               onClick={() => { WindowMaximize(); setIsMaximized(!isMaximized); }}
-              className="p-1.5 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors"
+              className={`p-1.5 rounded transition-colors ${colors.isDark ? 'hover:bg-slate-700/50 text-slate-400 hover:text-white' : 'hover:bg-slate-200/50 text-slate-500 hover:text-slate-900'}`}
               title={isMaximized ? "还原" : "最大化"}
             >
               {isMaximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
             </button>
             <button
               onClick={() => WindowClose()}
-              className="p-1.5 rounded hover:bg-red-500/80 text-slate-400 hover:text-white transition-colors"
+              className={`p-1.5 rounded hover:bg-red-500/80 hover:text-white transition-colors ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}
               title="关闭"
             >
               <X className="h-4 w-4" />
@@ -478,11 +480,11 @@ const App: React.FC = () => {
           <div className="fin-panel-strong border-b fin-divider px-6 py-3 shrink-0">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
-                <span className="text-lg font-bold text-white">{selectedStock.name}</span>
-                <span className="text-sm text-slate-400 font-mono">{selectedStock.symbol}</span>
+                <span className={`text-lg font-bold ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{selectedStock.name}</span>
+                <span className={`text-sm font-mono ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>{selectedStock.symbol}</span>
                 <button
                   onClick={() => setShowPosition(true)}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-slate-400 hover:text-accent-2 hover:bg-slate-700/50 transition-colors"
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${colors.isDark ? 'text-slate-400 hover:bg-slate-700/50' : 'text-slate-500 hover:bg-slate-200/50'} hover:text-accent-2`}
                   title="持仓设置"
                 >
                   <Briefcase className="h-3.5 w-3.5" />
@@ -518,7 +520,7 @@ const App: React.FC = () => {
                   {selectedStock.change >= 0 ? '+' : ''}{selectedStock.changePercent.toFixed(2)}%
                 </span>
               </div>
-              <div className="text-xs text-slate-500">
+              <div className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
             </div>
@@ -526,13 +528,13 @@ const App: React.FC = () => {
           
           {/* A股传统行情数据 */}
           <div className="grid grid-cols-4 gap-px p-2 fin-panel border-b fin-divider shrink-0 text-xs">
-            <AStockStatItem label="今开" value={selectedStock.open} preClose={selectedStock.preClose} />
-            <AStockStatItem label="最高" value={selectedStock.high} preClose={selectedStock.preClose} />
-            <AStockStatItem label="成交量" value={formatVolume(selectedStock.volume)} isPlain />
-            <AStockStatItem label="昨收" value={selectedStock.preClose} isPlain />
-            <AStockStatItem label="最低" value={selectedStock.low} preClose={selectedStock.preClose} />
-            <AStockStatItem label="成交额" value={formatAmount(selectedStock.amount)} isPlain />
-            <AStockStatItem label="振幅" value={selectedStock.preClose > 0 ? ((selectedStock.high - selectedStock.low) / selectedStock.preClose * 100).toFixed(2) + '%' : '--'} isPlain />
+            <AStockStatItem label="今开" value={selectedStock.open} preClose={selectedStock.preClose} isDark={colors.isDark} />
+            <AStockStatItem label="最高" value={selectedStock.high} preClose={selectedStock.preClose} isDark={colors.isDark} />
+            <AStockStatItem label="成交量" value={formatVolume(selectedStock.volume)} isPlain isDark={colors.isDark} />
+            <AStockStatItem label="昨收" value={selectedStock.preClose} isPlain isDark={colors.isDark} />
+            <AStockStatItem label="最低" value={selectedStock.low} preClose={selectedStock.preClose} isDark={colors.isDark} />
+            <AStockStatItem label="成交额" value={formatAmount(selectedStock.amount)} isPlain isDark={colors.isDark} />
+            <AStockStatItem label="振幅" value={selectedStock.preClose > 0 ? ((selectedStock.high - selectedStock.low) / selectedStock.preClose * 100).toFixed(2) + '%' : '--'} isPlain isDark={colors.isDark} />
           </div>
 
           <div className="flex-1 flex flex-col min-h-0">
@@ -598,10 +600,11 @@ interface AStockStatItemProps {
   value: number | string;
   preClose?: number;
   isPlain?: boolean;
+  isDark?: boolean;
 }
 
-const AStockStatItem: React.FC<AStockStatItemProps> = ({ label, value, preClose, isPlain }) => {
-  let colorClass = 'text-slate-100';
+const AStockStatItem: React.FC<AStockStatItemProps> = ({ label, value, preClose, isPlain, isDark = true }) => {
+  let colorClass = isDark ? 'text-slate-100' : 'text-slate-700';
   let displayValue = typeof value === 'string' ? value : value.toFixed(2);
 
   if (!isPlain && typeof value === 'number' && preClose) {
@@ -611,7 +614,7 @@ const AStockStatItem: React.FC<AStockStatItemProps> = ({ label, value, preClose,
 
   return (
     <div className="flex justify-between items-center px-3 py-1.5">
-      <span className="text-slate-500">{label}</span>
+      <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>{label}</span>
       <span className={`font-mono ${colorClass}`}>{displayValue}</span>
     </div>
   );

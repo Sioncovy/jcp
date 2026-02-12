@@ -5,6 +5,7 @@ import { getAgentConfigs } from '../services/strategyService';
 import { getMCPServers, MCPServerConfig, MCPServerStatus, testMCPConnection, getMCPServerTools, MCPToolInfo } from '../services/mcpService';
 import { checkForUpdate, doUpdate, restartApp, getCurrentVersion, onUpdateProgress, UpdateInfo, UpdateProgress } from '../services/updateService';
 import { getStrategies, getActiveStrategyID, setActiveStrategy, deleteStrategy, generateStrategy, updateStrategy, enhancePrompt, Strategy, StrategyAgent } from '../services/strategyService';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface AIConfig {
   id: string;
@@ -75,6 +76,7 @@ const useSettingsToast = () => {
 };
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('provider');
   const [aiConfigs, setAiConfigs] = useState<AIConfig[]>([]);
   const [mcpServers, setMcpServers] = useState<MCPServerConfig[]>([]);
@@ -235,7 +237,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-1 transition-all ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
-                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                    : (colors.isDark ? 'text-slate-400 hover:bg-slate-800/60 hover:text-white' : 'text-slate-500 hover:bg-slate-200/60 hover:text-slate-800')
                 }`}
               >
                 {tab.icon}
@@ -354,14 +356,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   );
 };
 
-const Header: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-  <div className="flex items-center justify-between px-5 py-4 border-b fin-divider fin-panel-strong">
-    <h2 className="text-lg font-semibold text-white">设置</h2>
-    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1 rounded hover:bg-slate-800/60">
-      <X className="h-5 w-5" />
-    </button>
-  </div>
-);
+const Header: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { colors } = useTheme();
+  return (
+    <div className="flex items-center justify-between px-5 py-4 border-b fin-divider fin-panel-strong">
+      <h2 className={`text-lg font-semibold ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>设置</h2>
+      <button onClick={onClose} className={`transition-colors p-1 rounded ${colors.isDark ? 'text-slate-500 hover:text-white hover:bg-slate-800/60' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/60'}`}>
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+  );
+};
 
 // ========== Provider 设置选项卡 ==========
 const PROVIDERS = ['openai', 'gemini', 'vertexai'] as const;
@@ -523,6 +528,7 @@ const ProviderListView: React.FC<ProviderListViewProps> = ({
   configs, onSelect, onSetDefault, onDelete, onCopy, onAdd,
   showAddModal, newProviderType, onSelectType, onConfirmAdd, onCancelAdd, getDeleteDisabledReason
 }) => {
+  const { colors } = useTheme();
   const defaultCount = configs.filter(c => c.isDefault).length;
 
   return (
@@ -530,8 +536,8 @@ const ProviderListView: React.FC<ProviderListViewProps> = ({
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-white font-medium">AI 模型配置</h3>
-          <p className="text-slate-500 text-xs mt-1">
+          <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>AI 模型配置</h3>
+          <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             共 {configs.length} 个配置，{defaultCount} 个默认
           </p>
         </div>
@@ -547,7 +553,7 @@ const ProviderListView: React.FC<ProviderListViewProps> = ({
       {/* 配置列表 */}
       <div className="space-y-2">
         {configs.length === 0 ? (
-          <p className="text-slate-500 text-sm text-center py-8">暂无 AI 配置</p>
+          <p className={`text-sm text-center py-8 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>暂无 AI 配置</p>
         ) : (
           configs.map(config => {
             const deleteReason = getDeleteDisabledReason(config.id);
@@ -588,42 +594,45 @@ interface AddAIConfigModalProps {
   onCancel: () => void;
 }
 
-const AddAIConfigModal: React.FC<AddAIConfigModalProps> = ({ selectedType, onSelectType, onConfirm, onCancel }) => (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] backdrop-blur-sm">
-    <div className="fin-panel border fin-divider rounded-xl w-[360px] p-5 shadow-2xl">
-      <h3 className="text-lg font-semibold text-white mb-4">添加 AI 配置</h3>
-      <div className="space-y-3 mb-5">
-        <label className="block text-sm text-slate-400 mb-2">选择类型</label>
-        <div className="flex gap-2">
-          {PROVIDERS.map(p => (
-            <button
-              key={p}
-              onClick={() => onSelectType(p)}
-              className={`flex-1 px-3 py-2 text-sm rounded-lg transition-all ${
-                selectedType === p
-                  ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
-                  : 'fin-panel border fin-divider text-slate-400 hover:text-white'
-              }`}
-            >
-              {PROVIDER_LABELS[p]}
-            </button>
-          ))}
+const AddAIConfigModal: React.FC<AddAIConfigModalProps> = ({ selectedType, onSelectType, onConfirm, onCancel }) => {
+  const { colors } = useTheme();
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] backdrop-blur-sm">
+      <div className="fin-panel border fin-divider rounded-xl w-[360px] p-5 shadow-2xl">
+        <h3 className={`text-lg font-semibold mb-4 ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>添加 AI 配置</h3>
+        <div className="space-y-3 mb-5">
+          <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>选择类型</label>
+          <div className="flex gap-2">
+            {PROVIDERS.map(p => (
+              <button
+                key={p}
+                onClick={() => onSelectType(p)}
+                className={`flex-1 px-3 py-2 text-sm rounded-lg transition-all ${
+                  selectedType === p
+                    ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
+                    : (colors.isDark ? 'fin-panel border fin-divider text-slate-400 hover:text-white' : 'fin-panel border fin-divider text-slate-500 hover:text-slate-800')
+                }`}
+              >
+                {PROVIDER_LABELS[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button onClick={onCancel} className={`px-4 py-2 text-sm ${colors.isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}>
+            取消
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm"
+          >
+            添加
+          </button>
         </div>
       </div>
-      <div className="flex justify-end gap-3">
-        <button onClick={onCancel} className="px-4 py-2 text-slate-400 hover:text-white text-sm">
-          取消
-        </button>
-        <button
-          onClick={onConfirm}
-          className="px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm"
-        >
-          添加
-        </button>
-      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ========== Provider 列表项 ==========
 interface ProviderListItemProps {
@@ -638,66 +647,71 @@ interface ProviderListItemProps {
 
 const ProviderListItem: React.FC<ProviderListItemProps> = ({
   config, onSelect, onSetDefault, onDelete, onCopy, deleteDisabled, deleteDisabledReason
-}) => (
-  <div
-    onClick={onSelect}
-    className={`p-3 rounded-lg border transition-all cursor-pointer ${
-      config.isDefault ? 'border-accent/50 bg-accent/10' : 'border-slate-700 hover:border-slate-600'
-    }`}
-  >
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/20 text-blue-400">
-          <Cpu className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-white text-sm font-medium">{config.name}</span>
-            <span className="text-xs px-1.5 py-0.5 fin-chip text-slate-400 rounded">
-              {PROVIDER_LABELS[config.provider as ProviderType] || config.provider}
-            </span>
-            {config.isDefault && (
-              <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent-2 rounded">默认</span>
-            )}
+}) => {
+  const { colors } = useTheme();
+  return (
+    <div
+      onClick={onSelect}
+      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+        config.isDefault
+          ? 'border-accent/50 bg-accent/10'
+          : (colors.isDark ? 'border-slate-700 hover:border-slate-600' : 'border-slate-300 hover:border-slate-400')
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/20 text-blue-400">
+            <Cpu className="h-5 w-5" />
           </div>
-          <p className="text-slate-500 text-xs">{config.modelName}</p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{config.name}</span>
+              <span className={`text-xs px-1.5 py-0.5 fin-chip rounded ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {PROVIDER_LABELS[config.provider as ProviderType] || config.provider}
+              </span>
+              {config.isDefault && (
+                <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent-2 rounded">默认</span>
+              )}
+            </div>
+            <p className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>{config.modelName}</p>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-        {/* 复制按钮 - 始终显示 */}
-        <button
-          onClick={onCopy}
-          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
-          title="复制配置"
-        >
-          <Copy className="h-4 w-4" />
-        </button>
-        {!config.isDefault && (
-          <>
-            <button
-              onClick={onSetDefault}
-              className="p-1.5 text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/20 rounded transition-colors"
-              title="设为默认"
-            >
-              <Star className="h-4 w-4" />
-            </button>
-            <button
-              onClick={deleteDisabled ? undefined : onDelete}
-              className={`p-1.5 rounded transition-colors ${
-                deleteDisabled
-                  ? 'text-slate-600 cursor-not-allowed'
-                  : 'text-slate-400 hover:text-red-400 hover:bg-red-500/20'
-              }`}
-              title={deleteDisabled ? deleteDisabledReason : "删除"}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </>
-        )}
+        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+          {/* 复制按钮 - 始终显示 */}
+          <button
+            onClick={onCopy}
+            className={`p-1.5 rounded transition-colors ${colors.isDark ? 'text-slate-400 hover:text-blue-400 hover:bg-blue-500/20' : 'text-slate-500 hover:text-blue-500 hover:bg-blue-500/10'}`}
+            title="复制配置"
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+          {!config.isDefault && (
+            <>
+              <button
+                onClick={onSetDefault}
+                className={`p-1.5 rounded transition-colors ${colors.isDark ? 'text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/20' : 'text-slate-500 hover:text-yellow-500 hover:bg-yellow-500/10'}`}
+                title="设为默认"
+              >
+                <Star className="h-4 w-4" />
+              </button>
+              <button
+                onClick={deleteDisabled ? undefined : onDelete}
+                className={`p-1.5 rounded transition-colors ${
+                  deleteDisabled
+                    ? (colors.isDark ? 'text-slate-600 cursor-not-allowed' : 'text-slate-400 cursor-not-allowed')
+                    : (colors.isDark ? 'text-slate-400 hover:text-red-400 hover:bg-red-500/20' : 'text-slate-500 hover:text-red-500 hover:bg-red-500/10')
+                }`}
+                title={deleteDisabled ? deleteDisabledReason : "删除"}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ========== Provider 编辑视图 ==========
 interface ProviderEditViewProps {
@@ -710,6 +724,7 @@ interface ProviderEditViewProps {
 const ProviderEditView: React.FC<ProviderEditViewProps> = ({
   config, onBack, onChange, onDelete
 }) => {
+  const { colors } = useTheme();
   const isVertexAI = config.provider === 'vertexai';
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
@@ -734,7 +749,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+            className={`p-1.5 rounded-lg transition-colors ${colors.isDark ? 'hover:bg-slate-700/60 text-slate-400 hover:text-white' : 'hover:bg-slate-200/60 text-slate-500 hover:text-slate-800'}`}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -742,8 +757,8 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
             <Cpu className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-white font-medium">{config.name}</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{config.name}</h3>
+            <p className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
               {PROVIDER_LABELS[config.provider as ProviderType] || config.provider}
               {config.isDefault && ' · 默认配置'}
             </p>
@@ -753,7 +768,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
           <button
             onClick={handleTestConnection}
             disabled={testing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg disabled:opacity-50 transition-colors shrink-0"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg disabled:opacity-50 transition-colors shrink-0 ${colors.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-600'}`}
           >
             {testing ? (
               <>
@@ -767,7 +782,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
           {!config.isDefault && (
             <button
               onClick={onDelete}
-              className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${colors.isDark ? 'hover:bg-red-500/20 text-slate-400 hover:text-red-400' : 'hover:bg-red-500/10 text-slate-500 hover:text-red-500'}`}
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -801,7 +816,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
 
         {config.provider === 'openai' && (
           <div className="flex items-center justify-between">
-            <label className="text-sm text-slate-400">使用 Responses API</label>
+            <label className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>使用 Responses API</label>
             <ToggleSwitch checked={config.useResponses} onChange={v => onChange({ ...config, useResponses: v })} />
           </div>
         )}
@@ -811,13 +826,13 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
             <FormField label="GCP 项目 ID" value={config.project || ''} onChange={v => onChange({ ...config, project: v })} />
             <FormField label="区域" value={config.location || ''} onChange={v => onChange({ ...config, location: v })} />
             <div>
-              <label className="block text-sm text-slate-400 mb-1.5">服务账号证书 (JSON)</label>
+              <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>服务账号证书 (JSON)</label>
               <textarea
                 value={config.credentialsJson || ''}
                 onChange={e => onChange({ ...config, credentialsJson: e.target.value })}
                 rows={4}
                 placeholder="粘贴服务账号 JSON 证书内容"
-                className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm resize-none font-mono"
+                className={`w-full fin-input rounded-lg px-3 py-2 text-sm resize-none font-mono ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
               />
             </div>
           </>
@@ -827,8 +842,8 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
 
         {/* 温度配置 */}
         <div>
-          <label className="block text-sm text-slate-400 mb-1.5">
-            温度 <span className="text-slate-500">({config.temperature})</span>
+          <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            温度 <span className={colors.isDark ? 'text-slate-500' : 'text-slate-400'}>({config.temperature})</span>
           </label>
           <input
             type="range"
@@ -837,9 +852,9 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
             step="0.1"
             value={config.temperature}
             onChange={e => onChange({ ...config, temperature: parseFloat(e.target.value) })}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+            className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--accent)] ${colors.isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
           />
-          <div className="flex justify-between text-xs text-slate-500 mt-1">
+          <div className={`flex justify-between text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             <span>精确 (0)</span>
             <span>创意 (1)</span>
           </div>
@@ -847,7 +862,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
 
         {/* Max Tokens 配置 */}
         <div>
-          <label className="block text-sm text-slate-400 mb-1.5">最大输出 Token</label>
+          <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>最大输出 Token</label>
           <input
             type="number"
             min="256"
@@ -855,10 +870,10 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
             step="256"
             value={config.maxTokens}
             onChange={e => onChange({ ...config, maxTokens: parseInt(e.target.value) || 2048 })}
-            className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+            className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
             placeholder="2048"
           />
-          <p className="text-xs text-slate-500 mt-1">建议值：2048-8192，最大取决于模型</p>
+          <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>建议值：2048-8192，最大取决于模型</p>
         </div>
 
       </div>
@@ -889,14 +904,15 @@ interface IntentSettingsProps {
 }
 
 const IntentSettings: React.FC<IntentSettingsProps> = ({ configs, moderatorAiId, onModeratorAiIdChange }) => {
+  const { colors } = useTheme();
   const selectedConfig = configs.find(c => c.id === moderatorAiId);
   const defaultConfig = configs.find(c => c.isDefault);
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-white font-medium">意图分析配置</h3>
-        <p className="text-slate-400 text-sm mt-1">
+        <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>意图分析配置</h3>
+        <p className={`text-sm mt-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           配置"小韭菜"使用的 AI 模型，用于分析用户意图和选择专家
         </p>
       </div>
@@ -908,17 +924,17 @@ const IntentSettings: React.FC<IntentSettingsProps> = ({ configs, moderatorAiId,
             <MessageSquare className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-white font-medium">小韭菜</div>
-            <div className="text-slate-500 text-xs">会议主持 · 意图分析</div>
+            <div className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>小韭菜</div>
+            <div className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>会议主持 · 意图分析</div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-2">使用的 AI 模型</label>
+          <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>使用的 AI 模型</label>
           <select
             value={moderatorAiId}
             onChange={e => onModeratorAiIdChange(e.target.value)}
-            className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+            className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
           >
             <option value="">使用默认配置 {defaultConfig ? `(${defaultConfig.name})` : ''}</option>
             {configs.map(config => (
@@ -932,12 +948,12 @@ const IntentSettings: React.FC<IntentSettingsProps> = ({ configs, moderatorAiId,
         {/* 当前选择的配置信息 */}
         {(selectedConfig || defaultConfig) && (
           <div className="mt-4 pt-4 border-t fin-divider">
-            <div className="text-xs text-slate-500 mb-2">当前配置详情</div>
+            <div className={`text-xs mb-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>当前配置详情</div>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-slate-400">模型</div>
-              <div className="text-white">{(selectedConfig || defaultConfig)?.modelName}</div>
-              <div className="text-slate-400">提供商</div>
-              <div className="text-white">
+              <div className={colors.isDark ? 'text-slate-400' : 'text-slate-500'}>模型</div>
+              <div className={colors.isDark ? 'text-white' : 'text-slate-800'}>{(selectedConfig || defaultConfig)?.modelName}</div>
+              <div className={colors.isDark ? 'text-slate-400' : 'text-slate-500'}>提供商</div>
+              <div className={colors.isDark ? 'text-white' : 'text-slate-800'}>
                 {PROVIDER_LABELS[(selectedConfig || defaultConfig)?.provider as ProviderType]}
               </div>
             </div>
@@ -946,7 +962,7 @@ const IntentSettings: React.FC<IntentSettingsProps> = ({ configs, moderatorAiId,
       </div>
 
       {/* 说明 */}
-      <div className="text-xs text-slate-500 space-y-1">
+      <div className={`text-xs space-y-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
         <p>• 小韭菜负责分析用户问题的意图，并选择合适的专家进行回答</p>
         <p>• 建议使用响应较快的模型以减少等待时间</p>
         <p>• 留空则使用系统默认的 AI 配置</p>
@@ -963,17 +979,20 @@ interface FormFieldProps {
   type?: string;
 }
 
-const FormField: React.FC<FormFieldProps> = ({ label, value, onChange, type = 'text' }) => (
-  <div>
-    <label className="block text-sm text-slate-400 mb-1.5">{label}</label>
-    <input
-      type={type}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm transition-colors"
-    />
-  </div>
-);
+const FormField: React.FC<FormFieldProps> = ({ label, value, onChange, type = 'text' }) => {
+  const { colors } = useTheme();
+  return (
+    <div>
+      <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className={`w-full fin-input rounded-lg px-3 py-2 text-sm transition-colors ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
+      />
+    </div>
+  );
+};
 
 // ========== Helper functions ==========
 const getDefaultBaseUrl = (provider: string): string => {
@@ -1001,12 +1020,13 @@ interface MemorySettingsProps {
 }
 
 const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onChange }) => {
+  const { colors } = useTheme();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-white font-medium">记忆管理</h3>
-          <p className="text-slate-400 text-sm mt-1">
+          <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>记忆管理</h3>
+          <p className={`text-sm mt-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             启用后，AI专家将记住之前的讨论内容，提供更连贯的分析
           </p>
         </div>
@@ -1017,22 +1037,22 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
             onChange={(e) => onChange({ ...config, enabled: e.target.checked })}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+          <div className={`w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent ${colors.isDark ? 'bg-slate-700' : 'bg-slate-400'}`}></div>
         </label>
       </div>
 
       {config.enabled && (
-        <div className="space-y-4 pt-4 border-t border-slate-700">
+        <div className={`space-y-4 pt-4 border-t ${colors.isDark ? 'border-slate-700' : 'border-slate-300'}`}>
           {/* LLM 选择 */}
           <div>
-            <label className="block text-sm text-slate-300 mb-2">
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               摘要模型
-              <span className="text-slate-500 ml-2">(用于生成记忆摘要)</span>
+              <span className={`ml-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>(用于生成记忆摘要)</span>
             </label>
             <select
               value={config.aiConfigId || ''}
               onChange={(e) => onChange({ ...config, aiConfigId: e.target.value })}
-              className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+              className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
             >
               <option value="">使用默认模型</option>
               {aiConfigs.map(ai => (
@@ -1041,15 +1061,15 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
                 </option>
               ))}
             </select>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
               建议选择较快的模型以减少延迟，留空则使用会议默认模型
             </p>
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-2">
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               保留最近讨论轮次
-              <span className="text-slate-500 ml-2">({config.maxRecentRounds}轮)</span>
+              <span className={`ml-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({config.maxRecentRounds}轮)</span>
             </label>
             <input
               type="range"
@@ -1057,18 +1077,18 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               max="10"
               value={config.maxRecentRounds}
               onChange={(e) => onChange({ ...config, maxRecentRounds: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+              className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--accent)] ${colors.isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
             />
-            <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <div className={`flex justify-between text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
               <span>1轮</span>
               <span>10轮</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-2">
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               触发压缩阈值
-              <span className="text-slate-500 ml-2">({config.compressThreshold}轮)</span>
+              <span className={`ml-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({config.compressThreshold}轮)</span>
             </label>
             <input
               type="range"
@@ -1076,17 +1096,17 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               max="15"
               value={config.compressThreshold}
               onChange={(e) => onChange({ ...config, compressThreshold: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+              className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--accent)] ${colors.isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
               超过此轮次后，旧讨论将被压缩为摘要
             </p>
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-2">
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               最大关键事实数
-              <span className="text-slate-500 ml-2">({config.maxKeyFacts}条)</span>
+              <span className={`ml-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({config.maxKeyFacts}条)</span>
             </label>
             <input
               type="range"
@@ -1095,14 +1115,14 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               step="5"
               value={config.maxKeyFacts}
               onChange={(e) => onChange({ ...config, maxKeyFacts: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+              className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--accent)] ${colors.isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-slate-300 mb-2">
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               摘要最大长度
-              <span className="text-slate-500 ml-2">({config.maxSummaryLength}字)</span>
+              <span className={`ml-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({config.maxSummaryLength}字)</span>
             </label>
             <input
               type="range"
@@ -1111,7 +1131,7 @@ const MemorySettings: React.FC<MemorySettingsProps> = ({ config, aiConfigs, onCh
               step="50"
               value={config.maxSummaryLength}
               onChange={(e) => onChange({ ...config, maxSummaryLength: parseInt(e.target.value) })}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
+              className={`w-full h-2 rounded-lg appearance-none cursor-pointer accent-[var(--accent)] ${colors.isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
             />
           </div>
         </div>
@@ -1134,6 +1154,7 @@ interface MCPSettingsProps {
 const MCPSettings: React.FC<MCPSettingsProps> = ({
   servers, mcpStatus, mcpTools, selectedMCP, onSelectMCP, onServersChange, onTestConnection
 }) => {
+  const { colors } = useTheme();
   if (selectedMCP) {
     return (
       <MCPEditForm
@@ -1172,7 +1193,7 @@ const MCPSettings: React.FC<MCPSettingsProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-white">MCP 服务器</h3>
+        <h3 className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>MCP 服务器</h3>
         <button
           onClick={handleAddNew}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg "
@@ -1181,9 +1202,9 @@ const MCPSettings: React.FC<MCPSettingsProps> = ({
           添加
         </button>
       </div>
-      <p className="text-xs text-slate-500 mb-4">配置 MCP 服务器以扩展 Agent 能力</p>
+      <p className={`text-xs mb-4 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>配置 MCP 服务器以扩展 Agent 能力</p>
       {servers.length === 0 ? (
-        <p className="text-slate-500 text-sm text-center py-8">暂无 MCP 服务器配置</p>
+        <p className={`text-sm text-center py-8 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>暂无 MCP 服务器配置</p>
       ) : (
         servers.map(server => (
           <MCPListItem
@@ -1205,6 +1226,7 @@ const MCPListItem: React.FC<{
   toolCount: number;
   onClick: () => void;
 }> = ({ server, status, toolCount, onClick }) => {
+  const { colors } = useTheme();
   // 状态指示器颜色
   const getStatusColor = () => {
     if (!server.enabled) return 'bg-slate-600';
@@ -1221,24 +1243,24 @@ const MCPListItem: React.FC<{
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 p-3 fin-panel-soft rounded-lg hover:bg-slate-800/60 transition-colors border fin-divider cursor-pointer"
+      className={`flex items-center gap-3 p-3 fin-panel-soft rounded-lg transition-colors border fin-divider cursor-pointer ${colors.isDark ? 'hover:bg-slate-800/60' : 'hover:bg-slate-100/60'}`}
     >
       <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 bg-purple-500/20 text-purple-400">
         <Plug className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-white text-sm font-medium">{server.name}</span>
-          <span className="text-xs px-1.5 py-0.5 fin-chip text-slate-400 rounded">{server.transportType}</span>
+          <span className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{server.name}</span>
+          <span className={`text-xs px-1.5 py-0.5 fin-chip rounded ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>{server.transportType}</span>
         </div>
-        <p className="text-slate-500 text-xs truncate">
+        <p className={`text-xs truncate ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {server.transportType === 'command' ? server.command : server.endpoint}
         </p>
       </div>
       <div className="flex items-center gap-3">
         {/* 工具数量 */}
         {status?.connected && toolCount > 0 && (
-          <span className="text-xs text-slate-400 flex items-center gap-1">
+          <span className={`text-xs flex items-center gap-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             <Wrench className="h-3 w-3" />
             {toolCount}
           </span>
@@ -1261,6 +1283,7 @@ interface MCPEditFormProps {
 }
 
 const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack, onChange, onDelete, onTestConnection }) => {
+  const { colors } = useTheme();
   const [edited, setEdited] = useState<MCPServerConfig>(server);
   const [testing, setTesting] = useState(false);
 
@@ -1277,7 +1300,7 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+            className={`p-1.5 rounded-lg transition-colors ${colors.isDark ? 'hover:bg-slate-700/60 text-slate-400 hover:text-white' : 'hover:bg-slate-200/60 text-slate-500 hover:text-slate-800'}`}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -1285,12 +1308,12 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-500/20 text-purple-400">
               <Plug className="h-5 w-5" />
             </div>
-            <h3 className="text-white font-medium">{edited.name}</h3>
+            <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{edited.name}</h3>
           </div>
         </div>
         <button
           onClick={onDelete}
-          className="p-2 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+          className={`p-2 rounded-lg transition-colors ${colors.isDark ? 'hover:bg-red-500/20 text-slate-400 hover:text-red-400' : 'hover:bg-red-500/10 text-slate-500 hover:text-red-500'}`}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -1301,11 +1324,11 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
 
       {/* 传输类型 */}
       <div>
-        <label className="block text-sm text-slate-400 mb-1.5">传输类型</label>
+        <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>传输类型</label>
         <select
           value={edited.transportType}
           onChange={e => handleChange('transportType', e.target.value as MCPServerConfig['transportType'])}
-          className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+          className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
         >
           <option value="http">HTTP (推荐)</option>
           <option value="sse">SSE</option>
@@ -1329,11 +1352,11 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
 
       {/* 启用状态 */}
       <div className="flex items-center justify-between pt-2">
-        <span className="text-sm text-slate-400">启用此服务</span>
+        <span className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>启用此服务</span>
         <button
           onClick={() => handleChange('enabled', !edited.enabled)}
           className={`w-11 h-6 rounded-full transition-colors ${
-            edited.enabled ? 'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)]' : 'bg-slate-600'
+            edited.enabled ? 'bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)]' : (colors.isDark ? 'bg-slate-600' : 'bg-slate-400')
           }`}
         >
           <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -1346,7 +1369,7 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
       <div className="pt-3 border-t fin-divider">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">连接状态</span>
+            <span className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>连接状态</span>
             {status && (
               <span className={`text-xs px-2 py-0.5 rounded ${
                 status.connected
@@ -1369,7 +1392,7 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
               setTesting(false);
             }}
             disabled={testing || !edited.enabled}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg disabled:opacity-50 transition-colors"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg disabled:opacity-50 transition-colors ${colors.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-600'}`}
           >
             {testing ? (
               <>
@@ -1387,15 +1410,15 @@ const MCPEditForm: React.FC<MCPEditFormProps> = ({ server, status, tools, onBack
       {status?.connected && tools.length > 0 && (
         <div className="pt-3 border-t fin-divider">
           <div className="flex items-center gap-2 mb-3">
-            <Wrench className="h-4 w-4 text-slate-400" />
-            <span className="text-sm text-slate-400">可用工具</span>
-            <span className="text-xs text-slate-500">({tools.length})</span>
+            <Wrench className={`h-4 w-4 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+            <span className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>可用工具</span>
+            <span className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({tools.length})</span>
           </div>
           <div className="space-y-2 max-h-40 overflow-y-auto fin-scrollbar">
             {tools.map(tool => (
-              <div key={tool.name} className="p-2 rounded-lg bg-slate-800/40 border fin-divider">
-                <div className="text-white text-xs font-medium">{tool.name}</div>
-                <div className="text-slate-500 text-xs mt-0.5 line-clamp-2">{tool.description}</div>
+              <div key={tool.name} className={`p-2 rounded-lg border fin-divider ${colors.isDark ? 'bg-slate-800/40' : 'bg-slate-100/40'}`}>
+                <div className={`text-xs font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{tool.name}</div>
+                <div className={`text-xs mt-0.5 line-clamp-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>{tool.description}</div>
               </div>
             ))}
           </div>
@@ -1412,6 +1435,7 @@ interface ProxySettingsProps {
 }
 
 const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
+  const { colors } = useTheme();
   const proxyModes: { value: ProxyMode; label: string; desc: string }[] = [
     { value: 'none', label: '无代理', desc: '直接连接，不使用任何代理' },
     { value: 'system', label: '系统代理', desc: '使用操作系统的代理设置' },
@@ -1421,8 +1445,8 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-white font-medium">网络代理</h3>
-        <p className="text-slate-400 text-sm mt-1">
+        <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>网络代理</h3>
+        <p className={`text-sm mt-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           配置应用的网络代理，用于访问 AI 服务和外部 API
         </p>
       </div>
@@ -1435,7 +1459,7 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
             className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
               config.mode === mode.value
                 ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                : 'border-slate-700 hover:border-slate-600'
+                : (colors.isDark ? 'border-slate-700 hover:border-slate-600' : 'border-slate-300 hover:border-slate-400')
             }`}
           >
             <input
@@ -1447,8 +1471,8 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
               className="mt-1 accent-[var(--accent)]"
             />
             <div>
-              <div className="text-white text-sm font-medium">{mode.label}</div>
-              <div className="text-slate-400 text-xs mt-0.5">{mode.desc}</div>
+              <div className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{mode.label}</div>
+              <div className={`text-xs mt-0.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>{mode.desc}</div>
             </div>
           </label>
         ))}
@@ -1456,8 +1480,8 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
 
       {/* 自定义代理地址输入 */}
       {config.mode === 'custom' && (
-        <div className="pt-4 border-t border-slate-700">
-          <label className="block text-sm text-slate-300 mb-2">
+        <div className={`pt-4 border-t ${colors.isDark ? 'border-slate-700' : 'border-slate-300'}`}>
+          <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>
             代理服务器地址
           </label>
           <input
@@ -1465,9 +1489,9 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
             value={config.customUrl}
             onChange={(e) => onChange({ ...config, customUrl: e.target.value })}
             placeholder="http://127.0.0.1:7890"
-            className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+            className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
           />
-          <p className="text-slate-500 text-xs mt-2">
+          <p className={`text-xs mt-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             支持 HTTP/HTTPS 代理，格式：http://host:port 或 http://user:pass@host:port
           </p>
         </div>
@@ -1478,6 +1502,7 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
 
 // ========== 更新设置选项卡 ==========
 const UpdateSettings: React.FC = () => {
+  const { colors } = useTheme();
   const [currentVersion, setCurrentVersion] = useState<string>('');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [checking, setChecking] = useState(false);
@@ -1521,20 +1546,20 @@ const UpdateSettings: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-white font-medium">软件更新</h3>
-        <p className="text-slate-400 text-sm mt-1">检查并安装最新版本</p>
+        <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>软件更新</h3>
+        <p className={`text-sm mt-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>检查并安装最新版本</p>
       </div>
 
       <div className="fin-panel rounded-lg p-4 border fin-divider">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-slate-400 text-sm">当前版本</span>
-            <p className="text-white font-medium mt-1">v{currentVersion || '...'}</p>
+            <span className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>当前版本</span>
+            <p className={`font-medium mt-1 ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>v{currentVersion || '...'}</p>
           </div>
           <button
             onClick={handleCheckUpdate}
             disabled={checking || updating}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm disabled:opacity-50 transition-colors"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors ${colors.isDark ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}
           >
             {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             {checking ? '检查中...' : '检查更新'}
@@ -1551,7 +1576,7 @@ const UpdateSettings: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-accent-2 text-sm font-medium">发现新版本</span>
-                  <p className="text-white font-medium mt-1">v{updateInfo.latestVersion}</p>
+                  <p className={`font-medium mt-1 ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>v{updateInfo.latestVersion}</p>
                 </div>
                 <button onClick={handleUpdate} disabled={updating}
                   className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm disabled:opacity-50">
@@ -1561,8 +1586,8 @@ const UpdateSettings: React.FC = () => {
               </div>
               {updateInfo.releaseNotes && (
                 <div className="pt-3 border-t fin-divider">
-                  <span className="text-slate-400 text-xs">更新说明</span>
-                  <p className="text-slate-300 text-sm mt-1 whitespace-pre-wrap">{updateInfo.releaseNotes}</p>
+                  <span className={`text-xs ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>更新说明</span>
+                  <p className={`text-sm mt-1 whitespace-pre-wrap ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>{updateInfo.releaseNotes}</p>
                 </div>
               )}
             </div>
@@ -1577,7 +1602,7 @@ const UpdateSettings: React.FC = () => {
       {progress && (
         <div className="fin-panel rounded-lg p-4 border fin-divider">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">{progress.message}</span>
+            <span className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>{progress.message}</span>
             {progress.status === 'completed' && (
               <button onClick={handleRestart} className="flex items-center gap-2 px-3 py-1.5 bg-accent text-white rounded-lg text-xs">
                 <RotateCcw className="h-3 w-3" />重启应用
@@ -1585,7 +1610,7 @@ const UpdateSettings: React.FC = () => {
             )}
           </div>
           {progress.percent > 0 && (
-            <div className="w-full bg-slate-700 rounded-full h-2">
+            <div className={`w-full rounded-full h-2 ${colors.isDark ? 'bg-slate-700' : 'bg-slate-300'}`}>
               <div className={`h-2 rounded-full transition-all ${progress.status === 'error' ? 'bg-red-500' : progress.status === 'completed' ? 'bg-accent' : 'bg-accent-2'}`}
                 style={{ width: `${progress.percent}%` }} />
             </div>
@@ -1777,6 +1802,7 @@ interface StrategyListItemProps {
 const StrategyListItem: React.FC<StrategyListItemProps> = ({
   strategy, isActive, onSelect, onActivate, onDelete
 }) => {
+  const { colors } = useTheme();
   const agentNames = strategy.agents?.map(a => a.name).join('、') || '无';
   const enabledCount = strategy.agents?.filter(a => a.enabled).length || 0;
 
@@ -1784,7 +1810,7 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
     <div
       onClick={onSelect}
       className={`p-3 rounded-lg border transition-all cursor-pointer ${
-        isActive ? 'border-accent/50 bg-accent/10' : 'border-slate-700 hover:border-slate-600'
+        isActive ? 'border-accent/50 bg-accent/10' : (colors.isDark ? 'border-slate-700 hover:border-slate-600' : 'border-slate-300 hover:border-slate-400')
       }`}
     >
       <div className="flex items-center justify-between">
@@ -1797,9 +1823,9 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-white text-sm font-medium">{strategy.name}</span>
+              <span className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{strategy.name}</span>
               {strategy.isBuiltin && (
-                <span className="text-xs px-1.5 py-0.5 fin-chip text-slate-400 rounded">内置</span>
+                <span className={`text-xs px-1.5 py-0.5 fin-chip rounded ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>内置</span>
               )}
               {strategy.source === 'ai' && (
                 <span className="text-xs px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded">AI</span>
@@ -1808,8 +1834,8 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
                 <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent-2 rounded">当前</span>
               )}
             </div>
-            <p className="text-slate-500 text-xs">{strategy.description}</p>
-            <p className="text-slate-600 text-xs mt-1">
+            <p className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>{strategy.description}</p>
+            <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-600' : 'text-slate-400'}`}>
               专家: {agentNames} ({enabledCount}/{strategy.agents?.length || 0}启用)
             </p>
           </div>
@@ -1826,7 +1852,7 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
           {!strategy.isBuiltin && !isActive && (
             <button
               onClick={onDelete}
-              className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded"
+              className={`p-1.5 hover:text-red-400 hover:bg-red-500/20 rounded ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}
               title="删除"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -1858,62 +1884,65 @@ interface StrategyListViewProps {
 const StrategyListView: React.FC<StrategyListViewProps> = ({
   strategies, activeStrategyId, strategyAiId, aiConfigs, generating, prompt, error,
   onPromptChange, onGenerate, onSelectStrategy, onActivate, onDelete, onStrategyAiIdChange
-}) => (
-  <div className="space-y-6">
-    {/* AI生成策略 */}
-    <div>
-      <h3 className="text-white font-medium mb-3">AI生成策略组</h3>
-      {/* 生成用模型选择 */}
-      <div className="mb-3">
-        <label className="block text-sm text-slate-400 mb-1.5">生成用模型</label>
-        <select
-          value={strategyAiId}
-          onChange={e => onStrategyAiIdChange(e.target.value)}
-          className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+}) => {
+  const { colors } = useTheme();
+  return (
+    <div className="space-y-6">
+      {/* AI生成策略 */}
+      <div>
+        <h3 className={`font-medium mb-3 ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>AI生成策略组</h3>
+        {/* 生成用模型选择 */}
+        <div className="mb-3">
+          <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>生成用模型</label>
+          <select
+            value={strategyAiId}
+            onChange={e => onStrategyAiIdChange(e.target.value)}
+            className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
+          >
+            <option value="">使用默认模型 {aiConfigs.find(c => c.isDefault) ? `(${aiConfigs.find(c => c.isDefault)!.name})` : ''}</option>
+            {aiConfigs.map(c => (
+              <option key={c.id} value={c.id}>{c.name} - {c.modelName}</option>
+            ))}
+          </select>
+        </div>
+        <textarea
+          value={prompt}
+          onChange={(e) => onPromptChange(e.target.value)}
+          placeholder="描述你想要的投资策略组..."
+          rows={3}
+          className={`w-full fin-input rounded-lg px-3 py-2 text-sm resize-none ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
+        />
+        {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
+        <button
+          onClick={onGenerate}
+          disabled={generating || !prompt.trim()}
+          className="mt-2 px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm disabled:opacity-50 flex items-center gap-2"
         >
-          <option value="">使用默认模型 {aiConfigs.find(c => c.isDefault) ? `(${aiConfigs.find(c => c.isDefault)!.name})` : ''}</option>
-          {aiConfigs.map(c => (
-            <option key={c.id} value={c.id}>{c.name} - {c.modelName}</option>
-          ))}
-        </select>
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          {generating ? '生成中...' : '生成策略组'}
+        </button>
       </div>
-      <textarea
-        value={prompt}
-        onChange={(e) => onPromptChange(e.target.value)}
-        placeholder="描述你想要的投资策略组..."
-        rows={3}
-        className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm resize-none"
-      />
-      {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-      <button
-        onClick={onGenerate}
-        disabled={generating || !prompt.trim()}
-        className="mt-2 px-4 py-2 bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white rounded-lg text-sm disabled:opacity-50 flex items-center gap-2"
-      >
-        {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        {generating ? '生成中...' : '生成策略组'}
-      </button>
-    </div>
 
-    {/* 策略列表 */}
-    <div>
-      <h3 className="text-white font-medium mb-3">策略组列表</h3>
-      <p className="text-slate-500 text-xs mb-3">点击策略可查看和编辑专家配置</p>
-      <div className="space-y-2">
-        {strategies.map(s => (
-          <StrategyListItem
-            key={s.id}
-            strategy={s}
-            isActive={s.id === activeStrategyId}
-            onSelect={() => onSelectStrategy(s)}
-            onActivate={() => onActivate(s.id)}
-            onDelete={() => onDelete(s.id)}
-          />
-        ))}
+      {/* 策略列表 */}
+      <div>
+        <h3 className={`font-medium mb-3 ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>策略组列表</h3>
+        <p className={`text-xs mb-3 ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>点击策略可查看和编辑专家配置</p>
+        <div className="space-y-2">
+          {strategies.map(s => (
+            <StrategyListItem
+              key={s.id}
+              strategy={s}
+              isActive={s.id === activeStrategyId}
+              onSelect={() => onSelectStrategy(s)}
+              onActivate={() => onActivate(s.id)}
+              onDelete={() => onDelete(s.id)}
+            />
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ========== 策略专家列表视图 ==========
 interface StrategyAgentListProps {
@@ -1927,6 +1956,7 @@ interface StrategyAgentListProps {
 const StrategyAgentList: React.FC<StrategyAgentListProps> = ({
   strategy, isActive, onBack, onSelectAgent, onAgentToggle
 }) => {
+  const { colors } = useTheme();
   const enabledCount = strategy.agents?.filter(a => a.enabled).length || 0;
 
   return (
@@ -1935,7 +1965,7 @@ const StrategyAgentList: React.FC<StrategyAgentListProps> = ({
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+          className={`p-1.5 rounded-lg transition-colors ${colors.isDark ? 'hover:bg-slate-700/60 text-slate-400 hover:text-white' : 'hover:bg-slate-200/60 text-slate-500 hover:text-slate-700'}`}
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -1947,17 +1977,17 @@ const StrategyAgentList: React.FC<StrategyAgentListProps> = ({
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-white font-medium">{strategy.name}</h3>
+            <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{strategy.name}</h3>
             {isActive && (
               <span className="text-xs px-1.5 py-0.5 bg-accent/20 text-accent-2 rounded">当前策略</span>
             )}
           </div>
-          <p className="text-slate-500 text-xs">{strategy.description}</p>
+          <p className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>{strategy.description}</p>
         </div>
       </div>
 
       {/* 专家统计 */}
-      <div className="text-sm text-slate-400">
+      <div className={`text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
         共 {strategy.agents?.length || 0} 位专家，{enabledCount} 位已启用
       </div>
 
@@ -1985,37 +2015,40 @@ interface StrategyAgentListItemProps {
 
 const StrategyAgentListItem: React.FC<StrategyAgentListItemProps> = ({
   agent, onSelect, onToggle
-}) => (
-  <div
-    onClick={onSelect}
-    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-      agent.enabled
-        ? 'border-slate-700 hover:border-slate-600'
-        : 'border-slate-800 bg-slate-800/30 opacity-60'
-    }`}
-  >
+}) => {
+  const { colors } = useTheme();
+  return (
     <div
-      className="w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] rounded-full flex items-center justify-center text-sm shrink-0"
-      style={{ backgroundColor: agent.color + '20', color: agent.color }}
-    >
-      {agent.name.charAt(0)}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="text-white text-sm font-medium">{agent.name}</div>
-      <div className="text-slate-500 text-xs">{agent.role}</div>
-    </div>
-    <button
-      onClick={(e) => { e.stopPropagation(); onToggle(); }}
-      className={`w-10 h-5 rounded-full transition-colors ${
-        agent.enabled ? 'bg-accent' : 'bg-slate-600'
+      onClick={onSelect}
+      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+        agent.enabled
+          ? (colors.isDark ? 'border-slate-700 hover:border-slate-600' : 'border-slate-300 hover:border-slate-400')
+          : (colors.isDark ? 'border-slate-800 bg-slate-800/30 opacity-60' : 'border-slate-200 bg-slate-100/30 opacity-60')
       }`}
     >
-      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${
-        agent.enabled ? 'translate-x-5' : 'translate-x-0.5'
-      }`} />
-    </button>
-  </div>
-);
+      <div
+        className="w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] rounded-full flex items-center justify-center text-sm shrink-0"
+        style={{ backgroundColor: agent.color + '20', color: agent.color }}
+      >
+        {agent.name.charAt(0)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{agent.name}</div>
+        <div className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>{agent.role}</div>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        className={`w-10 h-5 rounded-full transition-colors ${
+          agent.enabled ? 'bg-accent' : (colors.isDark ? 'bg-slate-600' : 'bg-slate-400')
+        }`}
+      >
+        <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${
+          agent.enabled ? 'translate-x-5' : 'translate-x-0.5'
+        }`} />
+      </button>
+    </div>
+  );
+};
 
 // ========== 策略专家编辑视图 ==========
 interface StrategyAgentEditProps {
@@ -2116,38 +2149,41 @@ interface AgentEditHeaderProps {
 
 const AgentEditHeader: React.FC<AgentEditHeaderProps> = ({
   agent, strategyName, onBack, onToggleEnabled
-}) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-3">
+}) => {
+  const { colors } = useTheme();
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className={`p-1.5 rounded-lg transition-colors ${colors.isDark ? 'hover:bg-slate-700/60 text-slate-400 hover:text-white' : 'hover:bg-slate-200/60 text-slate-500 hover:text-slate-700'}`}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div
+          className="w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] rounded-full flex items-center justify-center text-sm shrink-0"
+          style={{ backgroundColor: agent.color + '20', color: agent.color }}
+        >
+          {agent.name.charAt(0)}
+        </div>
+        <div>
+          <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{agent.name}</h3>
+          <p className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>{strategyName} / {agent.role}</p>
+        </div>
+      </div>
       <button
-        onClick={onBack}
-        className="p-1.5 rounded-lg hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+        onClick={onToggleEnabled}
+        className={`w-11 h-6 rounded-full transition-colors ${
+          agent.enabled ? 'bg-accent' : (colors.isDark ? 'bg-slate-600' : 'bg-slate-400')
+        }`}
       >
-        <ChevronLeft className="h-5 w-5" />
+        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
+          agent.enabled ? 'translate-x-5' : 'translate-x-0.5'
+        }`} />
       </button>
-      <div
-        className="w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] rounded-full flex items-center justify-center text-sm shrink-0"
-        style={{ backgroundColor: agent.color + '20', color: agent.color }}
-      >
-        {agent.name.charAt(0)}
-      </div>
-      <div>
-        <h3 className="text-white font-medium">{agent.name}</h3>
-        <p className="text-xs text-slate-500">{strategyName} / {agent.role}</p>
-      </div>
     </div>
-    <button
-      onClick={onToggleEnabled}
-      className={`w-11 h-6 rounded-full transition-colors ${
-        agent.enabled ? 'bg-accent' : 'bg-slate-600'
-      }`}
-    >
-      <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
-        agent.enabled ? 'translate-x-5' : 'translate-x-0.5'
-      }`} />
-    </button>
-  </div>
-);
+  );
+};
 
 // 专家编辑标签页
 interface AgentEditTabsProps {
@@ -2160,6 +2196,7 @@ interface AgentEditTabsProps {
 const AgentEditTabs: React.FC<AgentEditTabsProps> = ({
   activeTab, selectedToolsCount, selectedMCPCount, onTabChange
 }) => {
+  const { colors } = useTheme();
   const totalCount = selectedToolsCount + selectedMCPCount;
   return (
     <div className="flex gap-1 p-1 fin-panel rounded-lg border fin-divider">
@@ -2168,7 +2205,7 @@ const AgentEditTabs: React.FC<AgentEditTabsProps> = ({
         className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md transition-all ${
           activeTab === 'basic'
             ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
-            : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+            : (colors.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700/60' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/60')
         }`}
       >
         <Sliders className="h-4 w-4" />
@@ -2179,7 +2216,7 @@ const AgentEditTabs: React.FC<AgentEditTabsProps> = ({
         className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-md transition-all ${
           activeTab === 'tools'
             ? 'bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white'
-            : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+            : (colors.isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700/60' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/60')
         }`}
       >
         <Wrench className="h-4 w-4" />
@@ -2202,6 +2239,7 @@ interface AgentBasicConfigProps {
 }
 
 const AgentBasicConfig: React.FC<AgentBasicConfigProps> = ({ agent, aiConfigs, onChange }) => {
+  const { colors } = useTheme();
   const [enhancing, setEnhancing] = useState(false);
 
   const handleEnhance = async () => {
@@ -2229,11 +2267,11 @@ const AgentBasicConfig: React.FC<AgentBasicConfigProps> = ({ agent, aiConfigs, o
     <div className="space-y-4">
       {/* AI 配置选择 */}
       <div>
-        <label className="block text-sm text-slate-400 mb-1.5">AI 模型</label>
+        <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>AI 模型</label>
         <select
           value={agent.aiConfigId || ''}
           onChange={e => onChange('aiConfigId', e.target.value)}
-          className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm"
+          className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
         >
           <option value="">使用默认配置</option>
           {aiConfigs.map(config => (
@@ -2243,13 +2281,13 @@ const AgentBasicConfig: React.FC<AgentBasicConfigProps> = ({ agent, aiConfigs, o
             </option>
           ))}
         </select>
-        <p className="text-xs text-slate-500 mt-1">为该专家指定专用的 AI 模型，留空则使用系统默认配置</p>
+        <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>为该专家指定专用的 AI 模型，留空则使用系统默认配置</p>
       </div>
 
       {/* 系统指令 */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm text-slate-400">系统指令 (Prompt)</label>
+          <label className={`block text-sm ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>系统指令 (Prompt)</label>
           <button
             onClick={handleEnhance}
             disabled={enhancing || !agent.instruction?.trim()}
@@ -2273,7 +2311,7 @@ const AgentBasicConfig: React.FC<AgentBasicConfigProps> = ({ agent, aiConfigs, o
           onChange={e => onChange("instruction", e.target.value)}
           rows={10}
           placeholder="定义专家的行为和角色..."
-          className="w-full fin-input rounded-lg px-3 py-2 text-white text-sm resize-none"
+          className={`w-full fin-input rounded-lg px-3 py-2 text-sm resize-none ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
         />
       </div>
     </div>
@@ -2292,6 +2330,7 @@ interface AgentToolsConfigProps {
 const AgentToolsConfig: React.FC<AgentToolsConfigProps> = ({
   agent, availableTools, mcpServers, onToggleTool, onToggleMCPServer
 }) => {
+  const { colors } = useTheme();
   const selectedTools = agent.tools || [];
   const selectedMCPServers = agent.mcpServers || [];
 
@@ -2300,10 +2339,10 @@ const AgentToolsConfig: React.FC<AgentToolsConfigProps> = ({
       {/* 内置工具 */}
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm text-slate-400 flex items-center gap-1.5">
+          <label className={`text-sm flex items-center gap-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             <Wrench className="h-4 w-4" />
             内置工具
-            <span className="text-xs text-slate-500">({selectedTools.length}/{availableTools.length})</span>
+            <span className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({selectedTools.length}/{availableTools.length})</span>
           </label>
         </div>
         <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto fin-scrollbar">
@@ -2316,17 +2355,17 @@ const AgentToolsConfig: React.FC<AgentToolsConfigProps> = ({
                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                   isSelected
                     ? "border-accent/50 bg-accent/10"
-                    : "border-slate-700 hover:border-slate-600 hover:bg-slate-800/40"
+                    : (colors.isDark ? "border-slate-700 hover:border-slate-600 hover:bg-slate-800/40" : "border-slate-300 hover:border-slate-400 hover:bg-slate-100/40")
                 }`}
               >
                 <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
-                  isSelected ? "bg-accent text-white" : "bg-slate-700 border border-slate-600"
+                  isSelected ? "bg-accent text-white" : (colors.isDark ? "bg-slate-700 border border-slate-600" : "bg-slate-200 border border-slate-300")
                 }`}>
                   {isSelected && <Check className="h-3 w-3" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-white text-sm font-medium">{tool.name}</div>
-                  <div className="text-slate-500 text-xs">{tool.description}</div>
+                  <div className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{tool.name}</div>
+                  <div className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>{tool.description}</div>
                 </div>
               </div>
             );
@@ -2338,10 +2377,10 @@ const AgentToolsConfig: React.FC<AgentToolsConfigProps> = ({
       {mcpServers.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-slate-400 flex items-center gap-1.5">
+            <label className={`text-sm flex items-center gap-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               <Plug className="h-4 w-4" />
               MCP 服务器
-              <span className="text-xs text-slate-500">({selectedMCPServers.length}/{mcpServers.length})</span>
+              <span className={`text-xs ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>({selectedMCPServers.length}/{mcpServers.length})</span>
             </label>
           </div>
           <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto fin-scrollbar">
@@ -2354,17 +2393,17 @@ const AgentToolsConfig: React.FC<AgentToolsConfigProps> = ({
                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                     isSelected
                       ? "border-purple-500/50 bg-purple-500/10"
-                      : "border-slate-700 hover:border-slate-600 hover:bg-slate-800/40"
+                      : (colors.isDark ? "border-slate-700 hover:border-slate-600 hover:bg-slate-800/40" : "border-slate-300 hover:border-slate-400 hover:bg-slate-100/40")
                   }`}
                 >
                   <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
-                    isSelected ? "bg-purple-500 text-white" : "bg-slate-700 border border-slate-600"
+                    isSelected ? "bg-purple-500 text-white" : (colors.isDark ? "bg-slate-700 border border-slate-600" : "bg-slate-200 border border-slate-300")
                   }`}>
                     {isSelected && <Check className="h-3 w-3" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm font-medium">{server.name}</div>
-                    <div className="text-slate-500 text-xs truncate">{server.command} {server.args?.join(' ')}</div>
+                    <div className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>{server.name}</div>
+                    <div className={`text-xs truncate ${colors.isDark ? 'text-slate-500' : 'text-slate-500'}`}>{server.command} {server.args?.join(' ')}</div>
                   </div>
                 </div>
               );
