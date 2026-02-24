@@ -110,6 +110,10 @@ export function GetMCPStatus() {
   return window['go']['main']['App']['GetMCPStatus']();
 }
 
+export function GetOpenClawStatus() {
+  return window['go']['main']['App']['GetOpenClawStatus']();
+}
+
 export function GetOrCreateSession(arg1, arg2) {
   return window['go']['main']['App']['GetOrCreateSession'](arg1, arg2);
 }

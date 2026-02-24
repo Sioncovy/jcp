@@ -61,6 +61,8 @@ export function GetMCPServers():Promise<Array<models.MCPServerConfig>>;
 
 export function GetMCPStatus():Promise<Array<mcp.ServerStatus>>;
 
+export function GetOpenClawStatus():Promise<Record<string, any>>;
+
 export function GetOrCreateSession(arg1:string,arg2:string):Promise<models.StockSession>;
 
 export function GetOrderBook(arg1:string):Promise<models.OrderBook>;

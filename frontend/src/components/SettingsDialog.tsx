@@ -44,7 +44,14 @@ interface ProxyConfig {
   customUrl: string;
 }
 
-type TabType = 'provider' | 'intent' | 'strategy' | 'mcp' | 'memory' | 'proxy' | 'update';
+// OpenClaw 配置接口
+interface OpenClawConfig {
+  enabled: boolean;
+  port: number;
+  apiKey: string;
+}
+
+type TabType = 'provider' | 'intent' | 'strategy' | 'mcp' | 'memory' | 'proxy' | 'openclaw' | 'update';
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -95,6 +102,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     mode: 'none',
     customUrl: '',
   });
+  const [openClawConfig, setOpenClawConfig] = useState<OpenClawConfig>({
+    enabled: false,
+    port: 51888,
+    apiKey: '',
+  });
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [activeStrategyId, setActiveStrategyId] = useState<string>('');
   const [moderatorAiId, setModeratorAiId] = useState<string>('');
@@ -119,6 +131,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       setProxyConfig({
         mode: config.proxy.mode as ProxyMode,
         customUrl: config.proxy.customUrl || '',
+      });
+    }
+    if (config.openClaw) {
+      setOpenClawConfig({
+        enabled: config.openClaw.enabled || false,
+        port: config.openClaw.port || 8080,
+        apiKey: config.openClaw.apiKey || '',
       });
     }
     if (config.moderatorAiId) setModeratorAiId(config.moderatorAiId);
@@ -183,6 +202,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     mcpServers: MCPServerConfig[];
     memory: MemoryConfig;
     proxy: ProxyConfig;
+    openClaw: OpenClawConfig;
     moderatorAiId: string;
     strategyAiId: string;
   }>) => {
@@ -220,6 +240,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     { id: 'mcp', label: 'MCP服务', icon: <Plug className="h-4 w-4" /> },
     { id: 'memory', label: '记忆管理', icon: <Brain className="h-4 w-4" /> },
     { id: 'proxy', label: '网络代理', icon: <Globe className="h-4 w-4" /> },
+    { id: 'openclaw', label: 'OpenClaw', icon: <Plug className="h-4 w-4" /> },
     { id: 'update', label: '软件更新', icon: <RefreshCw className="h-4 w-4" /> },
   ];
 
@@ -327,6 +348,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 onChange={(config) => {
                   setProxyConfig(config);
                   saveConfig({ proxy: config });
+                }}
+              />
+            )}
+            {activeTab === 'openclaw' && (
+              <OpenClawSettings
+                config={openClawConfig}
+                onChange={(config) => {
+                  setOpenClawConfig(config);
+                  saveConfig({ openClaw: config });
                 }}
               />
             )}
@@ -1494,6 +1524,109 @@ const ProxySettings: React.FC<ProxySettingsProps> = ({ config, onChange }) => {
           <p className={`text-xs mt-2 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>
             支持 HTTP/HTTPS 代理，格式：http://host:port 或 http://user:pass@host:port
           </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ========== OpenClaw 设置选项卡 ==========
+interface OpenClawSettingsProps {
+  config: OpenClawConfig;
+  onChange: (config: OpenClawConfig) => void;
+}
+
+const OpenClawSettings: React.FC<OpenClawSettingsProps> = ({ config, onChange }) => {
+  const { colors } = useTheme();
+  const [status, setStatus] = useState<{ running: boolean; port: number } | null>(null);
+  const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    const fetchStatus = () => {
+      // @ts-ignore
+      window.go?.main?.App?.GetOpenClawStatus?.().then((s: any) => {
+        setStatus(s);
+        // 状态同步后结束切换中状态
+        if (s && s.running === config.enabled) {
+          setSwitching(false);
+        }
+      });
+    };
+    fetchStatus();
+    const timer = setInterval(fetchStatus, 500);
+    return () => clearInterval(timer);
+  }, [config.enabled]);
+
+  const handleToggle = () => {
+    if (switching) return;
+    setSwitching(true);
+    onChange({ ...config, enabled: !config.enabled });
+  };
+
+  // 判断状态：切换中 or 已同步
+  const isRunning = status?.running ?? false;
+  const isSynced = isRunning === config.enabled;
+  const statusText = switching || !isSynced
+    ? (config.enabled ? '启动中...' : '关闭中...')
+    : (isRunning ? `运行中 (端口 ${status?.port})` : '未运行');
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className={`font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>OpenClaw 服务</h3>
+        <p className={`text-sm mt-1 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          启用后可通过 HTTP API 供 OpenClaw 等 AI Agent 调用分析能力
+        </p>
+      </div>
+
+      {/* 启用开关 - Switch 样式 */}
+      <div className={`flex items-center justify-between p-3 rounded-lg border ${
+        colors.isDark ? 'border-slate-700' : 'border-slate-300'
+      }`}>
+        <div>
+          <div className={`text-sm font-medium ${colors.isDark ? 'text-white' : 'text-slate-800'}`}>服务状态</div>
+          <div className={`text-xs mt-0.5 ${
+            switching || !isSynced ? 'text-yellow-400' : (isRunning ? 'text-green-400' : (colors.isDark ? 'text-slate-400' : 'text-slate-500'))
+          }`}>
+            {statusText}
+          </div>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={switching}
+          className={`relative w-11 h-6 rounded-full transition-colors ${
+            switching ? 'bg-yellow-500' : (config.enabled ? 'bg-[var(--accent)]' : (colors.isDark ? 'bg-slate-600' : 'bg-slate-300'))
+          } ${switching ? 'cursor-wait' : 'cursor-pointer'}`}
+        >
+          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+            config.enabled ? 'translate-x-6' : 'translate-x-1'
+          } ${switching ? 'animate-pulse' : ''}`} />
+        </button>
+      </div>
+
+      {config.enabled && (
+        <div className="space-y-4">
+          {/* 端口 */}
+          <div>
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>端口</label>
+            <input
+              type="number"
+              value={config.port}
+              onChange={(e) => onChange({ ...config, port: parseInt(e.target.value) || 8080 })}
+              className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
+            />
+          </div>
+          {/* API Key */}
+          <div>
+            <label className={`block text-sm mb-2 ${colors.isDark ? 'text-slate-300' : 'text-slate-600'}`}>API Key (可选)</label>
+            <input
+              type="password"
+              value={config.apiKey}
+              onChange={(e) => onChange({ ...config, apiKey: e.target.value })}
+              placeholder="留空则不鉴权"
+              className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -61,6 +61,7 @@ type AppConfig struct {
 	Memory        MemoryConfig      `json:"memory"`        // 记忆管理配置
 	Proxy         ProxyConfig       `json:"proxy"`         // 代理配置
 	Layout        LayoutConfig      `json:"layout"`        // 界面布局配置
+	OpenClaw      OpenClawConfig    `json:"openClaw"`      // OpenClaw 服务配置
 }
 
 // ProxyMode 代理模式
@@ -95,4 +96,11 @@ type LayoutConfig struct {
 	BottomPanelHeight int `json:"bottomPanelHeight"` // 底部面板高度(px)
 	WindowWidth       int `json:"windowWidth"`       // 窗口宽度(px)
 	WindowHeight      int `json:"windowHeight"`      // 窗口高度(px)
+}
+
+// OpenClawConfig OpenClaw 服务配置
+type OpenClawConfig struct {
+	Enabled bool   `json:"enabled"` // 是否启用
+	Port    int    `json:"port"`    // 监听端口
+	APIKey  string `json:"apiKey"`  // API 鉴权密钥（可选）
 }

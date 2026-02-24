@@ -298,6 +298,22 @@ export namespace models {
 	        this.aiConfigId = source["aiConfigId"];
 	    }
 	}
+	export class OpenClawConfig {
+	    enabled: boolean;
+	    port: number;
+	    apiKey: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new OpenClawConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.port = source["port"];
+	        this.apiKey = source["apiKey"];
+	    }
+	}
 	export class LayoutConfig {
 	    leftPanelWidth: number;
 	    rightPanelWidth: number;
@@ -390,6 +406,7 @@ export namespace models {
 	    memory: MemoryConfig;
 	    proxy: ProxyConfig;
 	    layout: LayoutConfig;
+	    openClaw: OpenClawConfig;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppConfig(source);
@@ -406,6 +423,7 @@ export namespace models {
 	        this.memory = this.convertValues(source["memory"], MemoryConfig);
 	        this.proxy = this.convertValues(source["proxy"], ProxyConfig);
 	        this.layout = this.convertValues(source["layout"], LayoutConfig);
+	        this.openClaw = this.convertValues(source["openClaw"], OpenClawConfig);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -569,6 +587,7 @@ export namespace models {
 	        this.securityType = source["securityType"];
 	    }
 	}
+	
 	
 	
 	export class OrderBookItem {

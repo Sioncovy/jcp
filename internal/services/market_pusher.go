@@ -75,9 +75,10 @@ type MarketDataPusher struct {
 	// 盘口缓存（用于diff检测）
 	lastOrderBookHash string
 
-	// 市场状态缓存（用于降频判断）
-	lastMarketStatus     string
+	// 市场状态缓存
+	lastMarketStatus     string    // 用于 getMarketPhase 降频
 	lastMarketStatusTime time.Time
+	lastPushedStatus     string    // 用于 pushMarketStatus 去重
 
 	// 控制
 	stopChan chan struct{}
@@ -205,6 +206,9 @@ func (p *MarketDataPusher) pushLoop() {
 	defer normalTicker.Stop()
 	defer slowTicker.Stop()
 	defer klineDayTicker.Stop()
+
+	// 延迟500ms等待前端事件监听注册完成
+	time.Sleep(500 * time.Millisecond)
 
 	// 立即并行推送一次
 	p.runParallel(2*time.Second, p.pushStockData, p.pushOrderBookData,
@@ -387,12 +391,11 @@ func (p *MarketDataPusher) pushMarketStatus() {
 	status := p.marketService.GetMarketStatus()
 
 	p.mu.Lock()
-	if p.lastMarketStatus == status.Status {
+	if p.lastPushedStatus == status.Status {
 		p.mu.Unlock()
 		return
 	}
-	p.lastMarketStatus = status.Status
-	p.lastMarketStatusTime = time.Now()
+	p.lastPushedStatus = status.Status
 	p.mu.Unlock()
 
 	runtime.EventsEmit(p.ctx, EventMarketStatusUpdate, status)

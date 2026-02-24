@@ -14,6 +14,7 @@ import (
 	"github.com/run-bigpig/jcp/internal/meeting"
 	"github.com/run-bigpig/jcp/internal/memory"
 	"github.com/run-bigpig/jcp/internal/models"
+	"github.com/run-bigpig/jcp/internal/openclaw"
 	"github.com/run-bigpig/jcp/internal/pkg/proxy"
 	"github.com/run-bigpig/jcp/internal/services"
 	"github.com/run-bigpig/jcp/internal/services/hottrend"
@@ -40,6 +41,7 @@ type App struct {
 	mcpManager         *mcp.Manager
 	memoryManager      *memory.Manager
 	updateService      *services.UpdateService
+	openClawServer     *openclaw.Server
 
 	// 会议取消管理
 	meetingCancels   map[string]context.CancelFunc
@@ -137,6 +139,20 @@ func NewApp() *App {
 	// 初始化更新服务
 	updateService := services.NewUpdateService("run-bigpig", "jcp", Version)
 
+	// 初始化 OpenClaw 服务
+	openClawServer := openclaw.NewServer(meetingService, agentContainer, func(aiConfigID string) *models.AIConfig {
+		cfg := configService.GetConfig()
+		if aiConfigID == "" {
+			aiConfigID = cfg.DefaultAIID
+		}
+		for i := range cfg.AIConfigs {
+			if cfg.AIConfigs[i].ID == aiConfigID {
+				return &cfg.AIConfigs[i]
+			}
+		}
+		return nil
+	})
+
 	log.Info("所有服务初始化完成")
 
 	return &App{
@@ -153,6 +169,7 @@ func NewApp() *App {
 		mcpManager:         mcpManager,
 		memoryManager:      memoryManager,
 		updateService:      updateService,
+		openClawServer:     openClawServer,
 		meetingCancels:     make(map[string]context.CancelFunc),
 	}
 }
@@ -194,11 +211,22 @@ func (a *App) startup(ctx context.Context) {
 	a.marketPusher = services.NewMarketDataPusher(a.marketService, a.configService, a.newsService)
 	a.marketPusher.Start(ctx)
 	log.Info("市场数据推送服务已启动")
+
+	// 启动 OpenClaw 服务（如果已启用）
+	cfg := a.configService.GetConfig()
+	if cfg.OpenClaw.Enabled && cfg.OpenClaw.Port > 0 {
+		if err := a.openClawServer.Start(cfg.OpenClaw.Port, cfg.OpenClaw.APIKey); err != nil {
+			log.Warn("OpenClaw 启动失败: %v", err)
+		}
+	}
 }
 
 // shutdown 应用关闭时调用
 func (a *App) shutdown(ctx context.Context) {
 	log.Info("应用正在关闭...")
+	if a.openClawServer != nil {
+		a.openClawServer.Stop()
+	}
 	if a.marketPusher != nil {
 		a.marketPusher.Stop()
 	}
@@ -246,7 +274,42 @@ func (a *App) UpdateConfig(config *models.AppConfig) string {
 			}
 		}
 	}
+	// 更新 OpenClaw 服务配置（热更新）
+	a.applyOpenClawConfig(&config.OpenClaw)
 	return "success"
+}
+
+// applyOpenClawConfig 应用 OpenClaw 配置变更
+func (a *App) applyOpenClawConfig(cfg *models.OpenClawConfig) {
+	if a.openClawServer == nil {
+		return
+	}
+	if !cfg.Enabled {
+		a.openClawServer.Stop()
+		return
+	}
+	if cfg.Port <= 0 {
+		return
+	}
+	// 端口或密钥变更时重启
+	if a.openClawServer.IsRunning() {
+		if a.openClawServer.GetPort() != cfg.Port {
+			a.openClawServer.Restart(cfg.Port, cfg.APIKey)
+		}
+	} else {
+		a.openClawServer.Start(cfg.Port, cfg.APIKey)
+	}
+}
+
+// GetOpenClawStatus 获取 OpenClaw 服务状态
+func (a *App) GetOpenClawStatus() map[string]any {
+	if a.openClawServer == nil {
+		return map[string]any{"running": false}
+	}
+	return map[string]any{
+		"running": a.openClawServer.IsRunning(),
+		"port":    a.openClawServer.GetPort(),
+	}
 }
 
 // GetWatchlist 获取自选股列表
