@@ -895,7 +895,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
           <label className={`block text-sm mb-1.5 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>最大输出 Token</label>
           <input
             type="number"
-            min="256"
+            min="0"
             max="128000"
             step="256"
             value={config.maxTokens}
@@ -903,7 +903,7 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
             className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
             placeholder="2048"
           />
-          <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>建议值：2048-8192，最大取决于模型</p>
+          <p className={`text-xs mt-1 ${colors.isDark ? 'text-slate-500' : 'text-slate-400'}`}>建议值：2048-8192，最大取决于模型,设置为0时表示不传递这个参数</p>
         </div>
 
       </div>

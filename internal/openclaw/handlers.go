@@ -33,19 +33,6 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
-	agents := s.agentContainer.GetAllAgents()
-	list := make([]map[string]any, 0, len(agents))
-	for _, a := range agents {
-		list = append(list, map[string]any{
-			"id":   a.GetID(),
-			"name": a.GetName(),
-			"role": a.GetRole(),
-		})
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"agents": list})
-}
-
 func writeJSON(w http.ResponseWriter, code int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)

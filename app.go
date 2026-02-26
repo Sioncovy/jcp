@@ -151,6 +151,15 @@ func NewApp() *App {
 			}
 		}
 		return nil
+	}, func(code string) (*models.Stock, error) {
+		stocks, err := marketService.GetStockRealTimeData(code)
+		if err != nil {
+			return nil, err
+		}
+		if len(stocks) == 0 {
+			return nil, nil
+		}
+		return &stocks[0], nil
 	})
 
 	log.Info("所有服务初始化完成")

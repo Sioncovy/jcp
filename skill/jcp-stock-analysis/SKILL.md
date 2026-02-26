@@ -24,7 +24,7 @@ AI驱动的A股智能分析系统，通过多专家Agent协作提供全面的投
 ```bash
 curl -X POST $JCP_API_URL/analyze \
   -H "Content-Type: application/json" \
-  -d '{"stockCode": "600519", "query": "分析投资价值"}'
+  -d '{"stockCode": "sh600519", "query": "分析投资价值"}'
 ```
 
 ## API 端点
@@ -33,20 +33,36 @@ curl -X POST $JCP_API_URL/analyze \
 |------|------|------|
 | /health | GET | 健康检查 |
 | /status | GET | 服务状态 |
-| /agents | GET | 可用专家列表 |
 | /analyze | POST | 股票分析 |
 
 ## 分析请求参数
 
 ```json
 {
-  "stockCode": "600519",
-  "query": "分析这只股票的投资价值",
-  "agentIds": ["agent1", "agent2"]  // 可选，指定专家
+  "stockCode": "sh600519",
+  "query": "分析这只股票的投资价值"
+}
+```
+
+## 响应格式
+
+```json
+{
+  "success": true,
+  "summary": "最终分析总结文本"
+}
+```
+
+错误响应：
+
+```json
+{
+  "success": false,
+  "error": "错误信息"
 }
 ```
 
 ## 示例对话
 
 用户: 帮我分析一下贵州茅台
-助手: [调用 /analyze 接口，stockCode=600519]
+助手: [调用 /analyze 接口，stockCode=sh600519]

@@ -15,6 +15,9 @@ import (
 
 var log = logger.New("OpenClaw")
 
+// StockResolver 根据股票代码获取实时数据
+type StockResolver func(code string) (*models.Stock, error)
+
 // Server OpenClaw HTTP 服务
 type Server struct {
 	mu             sync.RWMutex
@@ -24,14 +27,16 @@ type Server struct {
 	meetingService *meeting.Service
 	agentContainer *agent.Container
 	aiResolver     func(string) *models.AIConfig
+	stockResolver  StockResolver
 }
 
 // NewServer 创建 OpenClaw 服务
-func NewServer(ms *meeting.Service, ac *agent.Container, resolver func(string) *models.AIConfig) *Server {
+func NewServer(ms *meeting.Service, ac *agent.Container, resolver func(string) *models.AIConfig, stockResolver StockResolver) *Server {
 	return &Server{
 		meetingService: ms,
 		agentContainer: ac,
 		aiResolver:     resolver,
+		stockResolver:  stockResolver,
 	}
 }
 
@@ -54,7 +59,6 @@ func (s *Server) Start(port int, apiKey string) error {
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/status", s.handleStatus)
 	mux.HandleFunc("/analyze", s.withAuth(s.handleAnalyze))
-	mux.HandleFunc("/agents", s.handleAgents)
 
 	s.port = port
 	s.apiKey = apiKey

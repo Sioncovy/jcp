@@ -54,12 +54,23 @@ function parseTime(timeStr: string): Time {
   return timeStr as Time;
 }
 
-// 格式化时间显示
-function formatTimeDisplay(timeStr: string, isIntraday: boolean): string {
-  if (isIntraday && timeStr.length > 10) {
+// 将 UTC 秒级时间戳格式化为 YYYY-MM-DD HH:mm
+function formatTimestamp(ts: number): string {
+  const d = new Date(ts * 1000);
+  const Y = d.getUTCFullYear();
+  const M = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const D = String(d.getUTCDate()).padStart(2, '0');
+  const h = String(d.getUTCHours()).padStart(2, '0');
+  const m = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${Y}-${M}-${D} ${h}:${m}`;
+}
+
+// 格式化时间显示，统一为 YYYY-MM-DD HH:MM:SS
+function formatTimeDisplay(timeStr: string): string {
+  if (timeStr.length > 10) {
     return timeStr.slice(0, 19);
   }
-  return timeStr.slice(0, 10);
+  return timeStr.slice(0, 10) + ' 00:00:00';
 }
 
 export const StockChartLW: React.FC<StockChartProps> = ({ data, period, onPeriodChange, stock }) => {
@@ -149,6 +160,7 @@ export const StockChartLW: React.FC<StockChartProps> = ({ data, period, onPeriod
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderColor: '#1e293b', scaleMargins: { top: 0.1, bottom: 0.1 } },
       timeScale: { borderColor: '#1e293b', timeVisible: true, secondsVisible: false },
+      localization: { timeFormatter: (time: Time) => typeof time === 'number' ? formatTimestamp(time) : String(time) },
       handleScroll: true,
       handleScale: true,
     });
@@ -158,6 +170,7 @@ export const StockChartLW: React.FC<StockChartProps> = ({ data, period, onPeriod
       grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
       rightPriceScale: { borderColor: '#1e293b', scaleMargins: { top: 0.1, bottom: 0 } },
       timeScale: { borderColor: '#1e293b', timeVisible: true, secondsVisible: false },
+      localization: { timeFormatter: (time: Time) => typeof time === 'number' ? formatTimestamp(time) : String(time) },
       handleScroll: true,
       handleScale: true,
     });
@@ -419,7 +432,7 @@ export const StockChartLW: React.FC<StockChartProps> = ({ data, period, onPeriod
         <div className={`text-xs font-mono flex gap-3 ${colors.isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           {isIntraday ? (
             <>
-              <span>时间: <span className={colors.isDark ? 'text-slate-300' : 'text-slate-600'}>{displayData ? formatTimeDisplay(displayData.time, true) : '--'}</span></span>
+              <span>时间: <span className={colors.isDark ? 'text-slate-300' : 'text-slate-600'}>{displayData ? formatTimeDisplay(displayData.time) : '--'}</span></span>
               <span>价格: <span className={getPriceColor(displayData?.close || 0)}>{displayData?.close?.toFixed(2) || '--'}</span></span>
               <span>均价: <span className="text-yellow-500">{displayData?.avg?.toFixed(2) || '--'}</span></span>
               <span>涨跌: <span className={getPriceColor(currentPrice)}>{formatChange(displayData?.close || preClose)}</span></span>
@@ -427,7 +440,7 @@ export const StockChartLW: React.FC<StockChartProps> = ({ data, period, onPeriod
             </>
           ) : (
             <>
-              <span>时间: <span className={colors.isDark ? 'text-slate-300' : 'text-slate-600'}>{displayData ? formatTimeDisplay(displayData.time, false) : '--'}</span></span>
+              <span>时间: <span className={colors.isDark ? 'text-slate-300' : 'text-slate-600'}>{displayData ? formatTimeDisplay(displayData.time) : '--'}</span></span>
               <span>收: <span className="text-accent-2">{displayData?.close?.toFixed(2)}</span></span>
               <span>开: {displayData?.open?.toFixed(2)}</span>
               <span>高: <span className="text-red-400">{displayData?.high?.toFixed(2)}</span></span>

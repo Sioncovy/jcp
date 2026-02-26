@@ -52,8 +52,15 @@ export const LongHuBangDialog: React.FC<LongHuBangDialogProps> = ({ isOpen, onCl
       // 先获取交易日列表
       GetTradeDates(60).then((dates) => {
         if (dates && dates.length > 0) {
-          setTradeDates(dates);
-          const defaultDate = dates[0]; // 使用最近的交易日
+          // 使用北京时间判断，16点前从列表中排除今天
+          const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          const filtered = now.getHours() < 16
+            ? dates.filter(d => d !== todayStr)
+            : dates;
+          if (filtered.length === 0) return;
+          setTradeDates(filtered);
+          const defaultDate = filtered[0];
           setTradeDate(defaultDate);
           setPageNumber(1);
           setHasMore(true);
