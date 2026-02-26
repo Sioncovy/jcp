@@ -899,7 +899,10 @@ const ProviderEditView: React.FC<ProviderEditViewProps> = ({
             max="128000"
             step="256"
             value={config.maxTokens}
-            onChange={e => onChange({ ...config, maxTokens: parseInt(e.target.value) || 2048 })}
+            onChange={e => {
+              const val = parseInt(e.target.value);
+              onChange({ ...config, maxTokens: isNaN(val) ? 0 : val });
+            }}
             className={`w-full fin-input rounded-lg px-3 py-2 text-sm ${colors.isDark ? 'text-white' : 'text-slate-800'}`}
             placeholder="2048"
           />
